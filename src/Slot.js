@@ -3,11 +3,14 @@ import styles from './Slot.module.css';
 import { useDrop } from 'react-dnd';
 import { TYPES } from './Constant';
 
-export default function Slot({ children, coord, updater }) {
+// TODO: Remove Slot. There will be a model layer that the card will sit on top of.
+export default function Slot({ children, row, col, updater }) {
     const [collectedProps, drop] = useDrop({
         accept: TYPES.CARD,
-        drop: () => {
-            updater(coord);
+
+        drop: (_, monitor) => {
+            updater();
+            console.log(monitor.getItem());
         }
     });
 
