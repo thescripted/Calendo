@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Slot from './Slot';
 import Row from './Row';
 import Card from './Card';
@@ -19,6 +19,7 @@ function renderSlot(row_idx, col_idx, card) {
     function doNothing() {
         return;
     }
+
     return (
         <Slot key={`${row_idx}-${col_idx}`} row={row_idx} col={col_idx} updater={doNothing}>
             {displayCard()}
@@ -41,13 +42,53 @@ function getCardFromData(row, col) {
     }
 }
 
+function comparison(coordinate) {
+    const rowCoordinates = [25, 75, 125, 175, 225, 275, 325, 375, 425, 475, 525, 575]; // Perhaps kept in a constant file.
+    let minVal = Number.MAX_SAFE_INTEGER;
+    let coord = -1;
+    rowCoordinates.forEach(function (rowCoord, idx) {
+        const value = Math.abs(rowCoord - coordinate);
+        if (minVal > value) {
+            coord = idx;
+            minVal = value;
+        }
+    });
+    return { index: coord, value: rowCoordinates[coord] };
+}
+
 function App() {
+    const [card, setCardState] = React.useState([]);
+    console.log(card);
+
+    function generateCard(card_height) {
+        setCardState([...card, { level: 1, height: card_height - 25 }]);
+    }
+
+    function log(event) {
+        event.persist();
+        // Ensure that nativeEvent is only activated on the row, not any card/models/etc.
+        // if (event.target !== "0") {
+        //     return
+        // }
+
+        // Kinda iffy using document.getElement in a react application. This should never get deleted although.
+        if (event.target != document.getElementById('row_event')) {
+            return;
+        }
+        const yCoord = event.nativeEvent.offsetY;
+        console.log(`x-coord: ${event.nativeEvent.offsetX}, y-coord: ${event.nativeEvent.offsetY}`);
+        // event.stopPropagation();
+        const { index, value } = comparison(yCoord); // Determine the height of where I need to render the card.
+        generateCard(value);
+        console.log(`${yCoord} is closest to ${value}, which has index ${index}`);
+    }
+
     return (
         <div className='App'>
             <button>Click on me</button>
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
-                    {/* Remove Slots for a more generic "Row". The cards will be mapped via height & absolute positioning. */}
+                    {/* Remove Slots for a more generic "Row". The cards will be mapped via height & absolute positioning.
                     {Array.from({ length: 7 }).map(function (_, row_idx) {
                         return (
                             <Row key={`${row_idx}`}>
@@ -57,7 +98,18 @@ function App() {
                                 })}
                             </Row>
                         );
-                    })}
+                    })} */}
+                    <Row log={log}>
+                        {card.map(function (carditem) {
+                            return (
+                                <Card
+                                    level={carditem.level}
+                                    height={carditem.height}
+                                    key={`${carditem.level * 10}-${carditem.height}`}
+                                />
+                            );
+                        })}
+                    </Row>
                 </div>
             </DndProvider>
         </div>

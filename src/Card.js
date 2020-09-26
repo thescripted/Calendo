@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './Card.module.css';
+// import styles from './Card.module.css';
 import { useDrag } from 'react-dnd';
 import { TYPES } from './Constant';
 
@@ -12,11 +12,20 @@ export default function Card(props) {
             isDragging: monitor.isDragging()
         })
     });
-
-    console.log(props.length);
-
     return (
-        <div className={styles.card} ref={drag}>
+        <div
+            ref={drag}
+            style={{
+                height: `${45 * props.level}px`,
+                position: 'absolute',
+                top: props.height,
+                width: '100%',
+                background: 'darkblue',
+                color: 'white',
+                textAlign: 'center',
+                borderRadius: '5px'
+            }}
+        >
             <p>I am a card!</p>
         </div>
     );
