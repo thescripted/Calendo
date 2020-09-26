@@ -103,6 +103,7 @@ function App() {
                         {card.map(function (carditem) {
                             return (
                                 <Card
+                                    content='Hello, World'
                                     level={carditem.level}
                                     height={carditem.height}
                                     key={`${carditem.level * 10}-${carditem.height}`}
