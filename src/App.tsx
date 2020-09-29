@@ -4,23 +4,29 @@ import Card from './components/Card';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import produce from 'immer';
+import { ROW_HEIGHT } from './support/Constant'
 
-const rowCoordinates = [25, 75, 125, 175, 225, 275, 325, 375, 425, 475, 525, 575]; // Perhaps kept in a constant file.
+// TODO: Perhaps move rowCoordinates into a constructor method in a Row class. 
+const rowCoordinates = ((defaultHeight: number): number[] => {
+    const HOUR = 24
+    const HourToViewScale = defaultHeight / HOUR
+    const Offset = HourToViewScale / 2
+    let hourArray = Array.from({ length: HOUR }).map(function (hour, idx) {
+        return HourToViewScale * idx + Offset
+    })
+    return hourArray
+})(ROW_HEIGHT)
 
 interface ICard {
     level: number;
     height: number;
 }
 
-interface IRow {
-    cards: ICard[]
-}
-
-function comparison(coordinate) {
+function comparison(coordinate: number) {
     let minVal = Number.MAX_SAFE_INTEGER;
     let coord = -1;
     rowCoordinates.forEach(function (rowCoord, idx) {
-        const value = Math.abs(rowCoord - coordinate);
+        const value: number = Math.abs(rowCoord - coordinate); // Idk why a unary operator is needed on a known number type.
         if (minVal > value) {
             coord = idx;
             minVal = value;
@@ -30,17 +36,17 @@ function comparison(coordinate) {
 }
 
 function App() {
-    const [board, setBoardState] = React.useState<IRow[]>(); // # of arrays = # of rows in calendar.
-
-    function generateCard(rowIndex, cardHeight) {
-        const newCard: ICard = { level: 1, height: cardHeight - 25 };
-        const nextState: IRow[] = produce(board, draftState => {
-            draftState[rowIndex].cards.push(newCard);
+    const [board, setBoardState] = React.useState<ICard[][]>([[], [], [], [], []]); // # of arrays = # of rows in calendar.
+    console.log(rowCoordinates)
+    function generateCard(rowIndex: number, cardHeight: number) {
+        const newCard: ICard = { level: 1, height: cardHeight - rowCoordinates[0] };
+        const nextState: ICard[][] = produce(board, draftState => {
+            draftState[rowIndex].push(newCard);
         });
         setBoardState(nextState);
     }
 
-    function calendarClickHandler(rowIdx: Number, event) {
+    function calendarClickHandler(rowIdx: number, event) {
         // should rewrite to calendarClickEventHandler or something like that
         event.persist();
         // Ensure that nativeEvent is only activated on the row, not any card/models/etc.
@@ -65,13 +71,14 @@ function App() {
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
                     {board.map((single_row, idx) => (
-                        <Row rowIdx={idx} key={idx} calendarClickHandler={calendarClickHandler}>
-                            {single_row.cards.map(function (carditem) {
+                        <Row rowIdx={idx} key={idx} calendarClickHandler={calendarClickHandler} rowHeight={ROW_HEIGHT}>
+                            {single_row.map(function (carditem) {
                                 return (
                                     <Card
                                         content='Hello, World'
                                         level={carditem.level}
                                         height={carditem.height}
+                                        scale={rowCoordinates[0] * 2}
                                         key={`${idx}-${carditem.level * 10}-${carditem.height}`}
                                     />
                                 );

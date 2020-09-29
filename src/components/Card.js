@@ -16,7 +16,7 @@ export default function Card(props) {
         <div
             // ref={drag}
             className={styles.card}
-            style={{ height: `${38 * props.level}px`, top: props.height }}
+            style={{ height: `${props.scale * props.level - 2}px`, top: props.height }}
         >
             <p>{props.content}</p>
             <p>{props.dateString}</p>
