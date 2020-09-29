@@ -1,9 +1,0 @@
-.card {
-    width: 100%;
-    background: darkblue;
-    color: white;
-    text-align: center;
-    border-radius: 5px;
-
-    height: 45px; /* 95% of current card height */
-}

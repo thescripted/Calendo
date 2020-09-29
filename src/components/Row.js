@@ -1,11 +1,11 @@
 import React from 'react';
-import styles from './Row.module.css';
+import styles from './styles/Row.module.css';
 
 // A Row Component takes in Card components as children, and exposes the 'available slots' to the App component.
 // The App provides to the row an ability to create new cards, but only valid cards can be created.
-export default function Row({ children, log }) {
+export default function Row({ children, calendarClickHandler, rowIdx }) {
     return (
-        <div className={styles.row} onClick={e => log(e)} id='row_event'>
+        <div className={`${styles.row} rowEvent`} onClick={e => calendarClickHandler(rowIdx, e)}>
             {children}
         </div>
     );

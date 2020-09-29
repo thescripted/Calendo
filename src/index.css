@@ -1,5 +1,6 @@
 body {
     margin: 0;
+    background: #ddd;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
         'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -12,7 +13,7 @@ code {
 
 .App {
     width: 75%;
-    margin: 0 auto;
+    margin: 20px auto;
 }
 
 p {

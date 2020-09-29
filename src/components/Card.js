@@ -1,5 +1,5 @@
 import React from 'react';
-// import styles from './Card.module.css';
+import styles from './styles/Card.module.css';
 // import { useDrag } from 'react-dnd';
 // import { TYPES } from './Constant';
 
@@ -15,18 +15,8 @@ export default function Card(props) {
     return (
         <div
             // ref={drag}
-            style={{
-                fontSize: '12px',
-                fontWeight: '600',
-                height: `${38 * props.level}px`,
-                position: 'absolute',
-                top: props.height,
-                width: '210px',
-                background: 'rgb(3, 155, 229)',
-                color: 'white',
-                borderRadius: '5px',
-                padding: '2px 0 0 4px'
-            }}
+            className={styles.card}
+            style={{ height: `${38 * props.level}px`, top: props.height }}
         >
             <p>{props.content}</p>
             <p>{props.dateString}</p>

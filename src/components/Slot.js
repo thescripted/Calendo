@@ -1,7 +1,7 @@
 import React from 'react';
-import styles from './Slot.module.css';
+import styles from './styles/Slot.module.css';
 import { useDrop } from 'react-dnd';
-import { TYPES } from './Constant';
+import { TYPES } from '../support/Constant';
 
 // TODO: Remove Slot. There will be a model layer that the card will sit on top of.
 export default function Slot({ children, row, col, updater }) {

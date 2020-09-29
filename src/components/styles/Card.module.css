@@ -1,0 +1,15 @@
+.card {
+    font-size: 12px;
+    font-weight: 600;
+    position: absolute;
+    width: 100%;
+    box-sizing: border-box;
+    background: rgb(3, 155, 229);
+    color: white;
+    border-radius: 3px;
+    padding: 2px 0 0 4px;
+}
+
+.card p {
+    margin: 0;
+}
