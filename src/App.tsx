@@ -6,6 +6,11 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import produce from 'immer';
 import { ROW_HEIGHT } from './support/Constant'
 
+interface ICard {
+    level: number;
+    height: number;
+}
+
 // TODO: Perhaps move rowCoordinates into a constructor method in a Row class. 
 const rowCoordinates = ((defaultHeight: number): number[] => {
     const HOUR = 24
@@ -16,11 +21,6 @@ const rowCoordinates = ((defaultHeight: number): number[] => {
     })
     return hourArray
 })(ROW_HEIGHT)
-
-interface ICard {
-    level: number;
-    height: number;
-}
 
 function comparison(coordinate: number) {
     let minVal = Number.MAX_SAFE_INTEGER;
@@ -35,6 +35,7 @@ function comparison(coordinate: number) {
     return { index: coord, value: rowCoordinates[coord] };
 }
 
+
 function App() {
     const [board, setBoardState] = React.useState<ICard[][]>([[], [], [], [], []]); // # of arrays = # of rows in calendar.
     console.log(rowCoordinates)
@@ -46,14 +47,14 @@ function App() {
         setBoardState(nextState);
     }
 
-    function calendarClickHandler(rowIdx: number, event) {
-        // should rewrite to calendarClickEventHandler or something like that
-        event.persist();
-        // Ensure that nativeEvent is only activated on the row, not any card/models/etc.
-        // if (event.target !== "0") {
-        //     return
-        // }
+    function dragCard() {
 
+    }
+
+
+
+    function resolveClickHandler(rowIdx, event) {
+        event.persist();
         // Kinda iffy using document.getElement in a react application. This should never get deleted although.
         if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
             return;
@@ -66,15 +67,17 @@ function App() {
         console.log(`${yCoord} is closest to ${value}, which has index ${index}`);
     }
 
+
     return (
         <div className='App'>
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
                     {board.map((single_row, idx) => (
-                        <Row rowIdx={idx} key={idx} calendarClickHandler={calendarClickHandler} rowHeight={ROW_HEIGHT}>
+                        <Row rowIdx={idx} key={idx} resolveClickHandler={resolveClickHandler} rowHeight={ROW_HEIGHT}>
                             {single_row.map(function (carditem) {
                                 return (
                                     <Card
+                                        dragCard={dragCard}
                                         content='Hello, World'
                                         level={carditem.level}
                                         height={carditem.height}
