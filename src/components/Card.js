@@ -3,7 +3,7 @@ import styles from './styles/Card.module.css';
 // import { useDrag } from 'react-dnd';
 // import { TYPES } from './Constant';
 
-export default function Card(props) {
+export default function Card({ event, ...props }) {
     // const [collectedProps, drag] = useDrag({
     //     // ID is the main identifier for the card. This should be injected to this component from the model layer.
     //     // This will be the ID used so the slots know which card to render/update when needed.
@@ -16,12 +16,12 @@ export default function Card(props) {
         <div
             // ref={drag}
             className={styles.card}
-            style={{ height: `${props.scale * props.level - 2}px`, top: props.height }}
-            onMouseDown={() => props.publishDragEvent(props.id, true)}
-            onMouseUp={() => props.publishDragEvent(props.rowID, props.id, false)}
+            style={{ height: `${props.scale * event.level - 2}px`, top: event.height }}
+            // onMouseDown={() => props.publishDragEvent(props.id, true)}
+            // onMouseUp={() => props.publishDragEvent(props.rowID, props.id, false)}
         >
-            <p>{props.content}</p>
-            <p>{props.dateString}</p>
+            <p>{event.content}</p>
+            <p>{event.date.date}</p>
         </div>
     );
 }
