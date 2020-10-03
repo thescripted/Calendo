@@ -6,17 +6,20 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import produce from 'immer';
 import { ROW_HEIGHT } from './support/Constant'
 import { hashDate } from './support'
+import { v4 as uuidv4 } from "uuid"
+import * as dateFns from 'date-fns'
 
-interface IHeightIndex {
+interface IHeightIndex extends Array<number> {
     [index: number]: number
 }
 
 interface IEvent {
     eventID: string
-    level: number
-    levelPreview: number
-    heightLocator: IHeightIndex
-    date: IDay
+    dayID: string
+    date: Date
+    startTime: Date
+    endTime: Date
+    endTimePreview: Date | null // Used for validating updating the end-hour.
     content: string
 }
 
@@ -37,29 +40,17 @@ interface ISearchDay {
 interface IBoard {
     numRows: number // Will be removed soon...
     viewportHeight: number
-    heightIndex: IHeightIndex
+    heightIndex: IHeightIndex // Should probably not be state-dependent. 
     cardCollection: ISearchEvent
     eventDayCollection: ISearchDay
 }
 
-function comparison(coordinate: number) {
-    let minVal = Number.MAX_SAFE_INTEGER;
-    let coord = -1;
-    rowCoordinates.forEach(function (rowCoord, idx) {
-        const value: number = Math.abs(rowCoord - coordinate); // Idk why a unary operator is needed on a known number type.
-        if (minVal > value) {
-            coord = idx;
-            minVal = value;
-        }
-    });
-    return { index: coord, value: rowCoordinates[coord] };
-}
 
 class BoardGenerator {
     constructor(viewportHeight) {
         this._numRows = 5
         this._viewportHeight = viewportHeight
-        this._heightIndex = this._generateHeightIndex()
+        this._heightIndex = this._generateHeightIndex(24, 4)
         this._defaultDayCollection = this._generateDefaultDays()
 
     }
@@ -69,17 +60,17 @@ class BoardGenerator {
     private _heightIndex: IHeightIndex
     private _defaultDayCollection: ISearchDay
 
-    private _generateHeightIndex(): IHeightIndex {
-        const HOUR = 24
-        const HourToViewScale = this._viewportHeight / HOUR
-        const Offset = HourToViewScale / 2
-        let hourArray = Array.from({ length: HOUR }).map(function (_, idx) {
+    private _generateHeightIndex(hour, subdivision): IHeightIndex {
+        const HourToViewScale = this._viewportHeight / (hour * subdivision)
+        const Offset = HourToViewScale / 4
+        let hourArray = Array.from({ length: hour * subdivision }).map(function (_, idx) {
             return HourToViewScale * idx + Offset
         })
+        console.log(hourArray)
         return hourArray
     }
 
-    public _generateDefaultDays(): ISearchDay {
+    private _generateDefaultDays(): ISearchDay {
         let result: ISearchDay = {}
         for (let i = 0; i < this._numRows; i++) {
             const date = new Date(2020, 9, i) // 2020-10-01T05:00:00.000Z, 2020-10-02T05:00:00.000Z, ...
@@ -103,7 +94,7 @@ class BoardGenerator {
         }
     }
 
-    generateInitialWeek(): Date[] { // Will return 5 dates. 
+    generateInitialWeek(): Date[] {
         let week: Date[] = []
         for (let i = 0; i < this._numRows; i++) {
             week.push(new Date(2020, 9, i))
@@ -120,10 +111,7 @@ function getNativeEvent(rowID, nativeEvent) {
 
 function App() {
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState());
-    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek())
-
-
-    // const [board, setBoardstate] = React.useState<IEvent[][]>([[], [], [], [], []]); // # of arrays = # of rows in calendar.
+    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek());
     const [navigate, setNavigate] = React.useState<boolean>(false) // TODO: Update Name
     const [cardGenerator, setCardGenerator] = React.useState<boolean>(true) //TODO: Restructure how cards are generated.
     const [draggedCard, setDraggedCard] = React.useState<IEvent>(null)
@@ -136,32 +124,58 @@ function App() {
     //     setNavigate(bool)
     // }
 
-    function generateCard(rowIndex: number, cardHeight: number, cardHeightIndex: number) {
-        // const newCard: IEvent = { level: 1, levelPreview: 1, height: cardHeight - rowCoordinates[0], heightIndex: cardHeightIndex };
-        // const nextState: IEvent[][] = produce(board, draftState => {
-        //     draftState[rowIndex].push(newCard);
-        // });
-        // setBoardState(nextState);
+    function generateEvent(startHour: Date, endHour: Date, content: string, Day: IDay) {
+        const eventID = uuidv4()
+        const eventDraft: IEvent = {
+            eventID: eventID,
+            dayID: Day.dayID,
+            date: Day.date,
+            startTime: startHour,
+            endTime: endHour,
+            endTimePreview: null,
+            content: content,
+        }
+
+        const nextState: IBoard = produce(boardState, draftState => {
+            draftState.cardCollection[eventID] = eventDraft
+            draftState.eventDayCollection[Day.dayID].eventCollection.push(eventDraft)
+        })
+
+        setBoardState(nextState)
     }
 
-    function resolveClickHandler(rowIdx, event) {
+
+    function resolveClickHandler(dayOfWeek: Date, event) {
         event.persist();
         // Kinda iffy using document.getElement in a react application. This should never get deleted although.
         if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
             return;
         }
-        const yCoord = event.nativeEvent.offsetY;
         console.log(`x-coord: ${event.nativeEvent.offsetX}, y-coord: ${event.nativeEvent.offsetY}`);
-        // event.stopPropagation();
-        // const { index, value } = comparison(yCoord); // Determine the height of where I need to render the card.
+        const { index, value } = comparison(event.nativeEvent.offsetY)
+        const startHour = dateFns.add(dayOfWeek, { // by default, day of week starts at zero. Will need to push this to UTC. Later.
+            hours: index
+        })
 
-        // if (!cardGenerator) { // If something stopped the card from generating, restart it.
-        //     setCardGenerator(true)
-        // } else {
-        //     generateCard(rowIdx, value, index);
-        // }
-        // console.log(`${yCoord} is closest to ${value}, which has index ${index}`);
+        const oneHourLater = dateFns.add(startHour, {
+            hours: 1,
+        })
+        generateEvent(startHour, oneHourLater, "Hello, World", boardState.eventDayCollection[hashDate(dayOfWeek)])
     }
+
+    function comparison(coordinate: number) {
+        let minVal = Number.MAX_SAFE_INTEGER;
+        let coord = -1;
+        boardState.heightIndex.forEach(function (rowCoord, idx) { // a binary search would work better. Whatever.
+            const value: number = Math.abs(rowCoord - coordinate);
+            if (minVal > value) {
+                coord = idx;
+                minVal = value;
+            }
+        });
+        return { index: coord, value: boardState.heightIndex[coord] };
+    }
+
 
     function logMouseEvent(rowID, event) {
         if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
@@ -177,43 +191,24 @@ function App() {
         }
     }
 
-    // function registerCardPreviewState(cardID, coordinate) {
-    //     const { index, value } = comparison(coordinate)
-    //     let currentCard = draggedCard
-
-    // }
     return (
         <div className='App'>
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
                     {weekArray.map((dayOfWeek, rowViewID) => (
                         <Row
-                            rowIdx={rowViewID}
-                            key={rowViewID}
+                            dayOfWeek={dayOfWeek}
+                            key={rowViewID} // TODO: Maybe change the key to ID?
                             resolveClickHandler={resolveClickHandler}
                             logMouseEvent={logMouseEvent}
                             setNavigate={setNavigate} // TODO: Is there a way to setNavigate without passing it to Row?
                             rowHeight={boardState.viewportHeight}>
-                            {/* {single_row.map(function (carditem, cardIdx) {
-                                return (
-                                    <Card
-                                        id={cardIdx}
-                                        rowID={idx}
-                                        publishDragEvent={publishDragEvent}
-                                        content='Hello, World'
-                                        levelPreview={carditem.levelPreview}
-                                        level={carditem.level}
-                                        height={carditem.height}
-                                        scale={rowCoordinates[0] * 2}
-                                        key={`${idx}-${carditem.level * 10}-${carditem.height}`}
-                                    />
-                                );
-                            })} */}
                             {boardState.eventDayCollection[hashDate(dayOfWeek)].eventCollection.map((event, dayViewID) => (
                                 <Card
                                     event={event}
                                     key={`${rowViewID} + ${dayViewID}`}
-                                    scale={boardState.viewportHeight / 24}
+                                    scale={boardState.viewportHeight / (24 * 4)}
+                                    grid={boardState.heightIndex}
                                 />
                             ))}
                         </Row>
