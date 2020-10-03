@@ -46,7 +46,7 @@ interface IBoard {
 }
 
 
-class BoardGenerator {
+class BoardGenerator { // Maybe change this to a "function setup" or init instead.
     constructor(viewportHeight) {
         this._numRows = 5
         this._viewportHeight = viewportHeight
@@ -109,22 +109,19 @@ function getNativeEvent(rowID, nativeEvent) {
     return nativeEvent.offsetY
 }
 
+
+// <!-------------------------------------- TODO --------------------------------------!>
+// Register React DND for all drag-related events (moving cards from one row to another, moving cards within rows, expanding cards, etc.)
+// Configure Refactoring your state object & Incorporate a validator before any state changes.
+// Configure "Preview" Layer for updating card.
+// Continue Refactoring & Updating Application.
 function App() {
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState());
     const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek());
     const [navigate, setNavigate] = React.useState<boolean>(false) // TODO: Update Name
-    const [cardGenerator, setCardGenerator] = React.useState<boolean>(true) //TODO: Restructure how cards are generated.
-    const [draggedCard, setDraggedCard] = React.useState<IEvent>(null)
+    const [dragging, setDragging] = React.useState<IEvent | undefined>(undefined)
 
-    // function publishDragEvent(rowID: number, id: number, bool: boolean) {
-    //     if (bool) { // We have just come out of a dragEvent. Do not generate card.
-    //         setCardGenerator(false)
-    //         // setDraggedCard({ containerIdx: rowID, cardIdx: id })
-    //     }
-    //     setNavigate(bool)
-    // }
-
-    function generateEvent(startHour: Date, endHour: Date, content: string, Day: IDay) {
+    function generateEvent(startHour: Date, endHour: Date, content: string, Day: IDay): void {
         const eventID = uuidv4()
         const eventDraft: IEvent = {
             eventID: eventID,
@@ -144,23 +141,49 @@ function App() {
         setBoardState(nextState)
     }
 
+    function updateEvent(event: IEvent, endTime: Date): void { // TODO: Change endtime to a config/option method
+        console.log(event)
+        const nextState: IBoard = produce(boardState, draftState => {
+            draftState.cardCollection[event.eventID].endTime = endTime //TODO: Make it such that there's only one source of truth.
+            draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
+                if (singleEvent.eventID === event.eventID) {
+                    singleEvent.endTime = endTime
+                }
+                return singleEvent
+            })
+        })
 
-    function resolveClickHandler(dayOfWeek: Date, event) {
+        setBoardState(nextState)
+    }
+
+
+    function resolveMouseUpHandler(dayOfWeek: Date, event) {
         event.persist();
-        // Kinda iffy using document.getElement in a react application. This should never get deleted although.
-        if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
-            return;
-        }
-        console.log(`x-coord: ${event.nativeEvent.offsetX}, y-coord: ${event.nativeEvent.offsetY}`);
-        const { index, value } = comparison(event.nativeEvent.offsetY)
-        const startHour = dateFns.add(dayOfWeek, { // by default, day of week starts at zero. Will need to push this to UTC. Later.
-            minutes: 30 * index
-        })
+        if (dragging !== undefined) {
+            const { index } = comparison(event.nativeEvent.offsetY)
+            const endHour = dateFns.add(dayOfWeek, {
+                minutes: 30 * index
+            })
+            updateEvent(dragging, endHour)
 
-        const oneHourLater = dateFns.add(startHour, {
-            hours: 1,
-        })
-        generateEvent(startHour, oneHourLater, "Hello, World", boardState.eventDayCollection[hashDate(dayOfWeek)])
+            setDragging(undefined)
+            return
+        } else {
+            // Kinda iffy using document.getElement in a react application. This should never get deleted although.
+            if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
+                return;
+            }
+            console.log(`x-coord: ${event.nativeEvent.offsetX}, y-coord: ${event.nativeEvent.offsetY}`);
+            const { index, value } = comparison(event.nativeEvent.offsetY)
+            const startHour = dateFns.add(dayOfWeek, { // by default, day of week starts at zero. Will need to push this to UTC. Later.
+                minutes: 30 * index
+            })
+
+            const oneHourLater = dateFns.add(startHour, {
+                hours: 1,
+            })
+            generateEvent(startHour, oneHourLater, "Hello, World", boardState.eventDayCollection[hashDate(dayOfWeek)])
+        }
     }
 
     function comparison(coordinate: number) {
@@ -191,6 +214,16 @@ function App() {
         }
     }
 
+    function mouseDownEvent(event, card: IEvent) {
+        console.log(event)
+        setDragging(card)
+    }
+
+    React.useEffect(() => {
+        console.log(dragging)
+    }, [dragging])
+
+
     return (
         <div className='App'>
             <DndProvider backend={HTML5Backend}>
@@ -199,7 +232,7 @@ function App() {
                         <Row
                             dayOfWeek={dayOfWeek}
                             key={rowViewID} // TODO: Maybe change the key to ID?
-                            resolveClickHandler={resolveClickHandler}
+                            resolveMouseUpHandler={resolveMouseUpHandler}
                             logMouseEvent={logMouseEvent}
                             setNavigate={setNavigate} // TODO: Is there a way to setNavigate without passing it to Row?
                             rowHeight={boardState.viewportHeight}>
@@ -209,6 +242,7 @@ function App() {
                                     key={`${rowViewID} + ${dayViewID}`}
                                     scale={boardState.viewportHeight}
                                     grid={boardState.heightIndex}
+                                    mouseDown={mouseDownEvent}
                                 />
                             ))}
                         </Row>
@@ -220,18 +254,3 @@ function App() {
 }
 
 export default App;
-
-
-// {
-//     fjaof: {
-//         location: 1,
-//             height: 1,
-//                 time: 1800,
-//                     row: 1,
-//     },
-//     hdfioup1: {
-//         location: 1,
-//         ...
-//     }
-//     ...
-// }

@@ -8,6 +8,8 @@
     color: white;
     border-radius: 3px;
     padding: 2px 0 0 4px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
 }
 
 .card p {

@@ -16,12 +16,8 @@ export default function Card({ event, ...props }) {
     // });
     const formattedStartTime = dateFns.format(event.startTime, 'hh:mm a');
     const formattedEndTime = dateFns.format(event.endTime, 'hh:mm a');
-
     const eventIntRatio = dateFns.differenceInMinutes(event.endTime, event.startTime) / (24 * 60);
     const eventHeightRatio = dateFns.differenceInMinutes(event.startTime, event.date) / (24 * 60);
-
-    console.log(event.startTime);
-    console.log(event.date);
 
     return (
         <div
@@ -31,7 +27,7 @@ export default function Card({ event, ...props }) {
                 height: `${props.scale * eventIntRatio - 2}px`,
                 top: eventHeightRatio * props.scale
             }}
-            // onMouseDown={() => props.publishDragEvent(props.id, true)}
+            onMouseDown={e => props.mouseDown(e, event)}
             // onMouseUp={() => props.publishDragEvent(props.rowID, props.id, false)}
         >
             <p>{event.content}</p>
