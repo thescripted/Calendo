@@ -50,7 +50,7 @@ class BoardGenerator {
     constructor(viewportHeight) {
         this._numRows = 5
         this._viewportHeight = viewportHeight
-        this._heightIndex = this._generateHeightIndex(24, 4)
+        this._heightIndex = this._generateHeightIndex(24, 2)
         this._defaultDayCollection = this._generateDefaultDays()
 
     }
@@ -62,7 +62,7 @@ class BoardGenerator {
 
     private _generateHeightIndex(hour, subdivision): IHeightIndex {
         const HourToViewScale = this._viewportHeight / (hour * subdivision)
-        const Offset = HourToViewScale / 4
+        const Offset = HourToViewScale / 2
         let hourArray = Array.from({ length: hour * subdivision }).map(function (_, idx) {
             return HourToViewScale * idx + Offset
         })
@@ -154,7 +154,7 @@ function App() {
         console.log(`x-coord: ${event.nativeEvent.offsetX}, y-coord: ${event.nativeEvent.offsetY}`);
         const { index, value } = comparison(event.nativeEvent.offsetY)
         const startHour = dateFns.add(dayOfWeek, { // by default, day of week starts at zero. Will need to push this to UTC. Later.
-            hours: index
+            minutes: 30 * index
         })
 
         const oneHourLater = dateFns.add(startHour, {
@@ -207,7 +207,7 @@ function App() {
                                 <Card
                                     event={event}
                                     key={`${rowViewID} + ${dayViewID}`}
-                                    scale={boardState.viewportHeight / (24 * 4)}
+                                    scale={boardState.viewportHeight}
                                     grid={boardState.heightIndex}
                                 />
                             ))}

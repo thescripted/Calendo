@@ -5,8 +5,6 @@ import * as dateFns from 'date-fns';
 // import { useDrag } from 'react-dnd';
 // import { TYPES } from './Constant';
 
-const FIFTEEN_MINUTE_INTERVAL = 15;
-
 export default function Card({ event, ...props }) {
     // const [collectedProps, drag] = useDrag({
     //     // ID is the main identifier for the card. This should be injected to this component from the model layer.
@@ -19,22 +17,19 @@ export default function Card({ event, ...props }) {
     const formattedStartTime = dateFns.format(event.startTime, 'hh:mm a');
     const formattedEndTime = dateFns.format(event.endTime, 'hh:mm a');
 
-    const eventHeightInterval =
-        dateFns.differenceInMinutes(event.endTime, event.startTime) / FIFTEEN_MINUTE_INTERVAL;
-    const eventHeightFromTop =
-        dateFns.differenceInMinutes(event.startTime, event.date) / FIFTEEN_MINUTE_INTERVAL;
+    const eventIntRatio = dateFns.differenceInMinutes(event.endTime, event.startTime) / (24 * 60);
+    const eventHeightRatio = dateFns.differenceInMinutes(event.startTime, event.date) / (24 * 60);
 
-    const gridIndex = event.startTime.getMinutes() / 15;
-    const generateEventHeight = props.grid[gridIndex] - props.grid[0];
+    console.log(event.startTime);
+    console.log(event.date);
 
-    console.log(gridIndex);
     return (
         <div
             // ref={drag}
             className={styles.card}
             style={{
-                height: `${props.scale * eventHeightInterval - 2}px`,
-                top: generateEventHeight
+                height: `${props.scale * eventIntRatio - 2}px`,
+                top: eventHeightRatio * props.scale
             }}
             // onMouseDown={() => props.publishDragEvent(props.id, true)}
             // onMouseUp={() => props.publishDragEvent(props.rowID, props.id, false)}
