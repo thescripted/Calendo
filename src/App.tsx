@@ -104,11 +104,6 @@ class BoardGenerator { // Maybe change this to a "function setup" or init instea
 }
 
 const Board = new BoardGenerator(ROW_HEIGHT)
-function getNativeEvent(rowID, nativeEvent) {
-    console.log(nativeEvent.offsetY)
-    return nativeEvent.offsetY
-}
-
 
 // <!-------------------------------------- TODO --------------------------------------!>
 // Register React DND for all drag-related events (moving cards from one row to another, moving cards within rows, expanding cards, etc.)
@@ -120,6 +115,10 @@ function App() {
     const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek());
     const [navigate, setNavigate] = React.useState<boolean>(false) // TODO: Update Name
     const [dragging, setDragging] = React.useState<IEvent | undefined>(undefined)
+
+    function validate(eventID: string, stagedState: IBoard): void {
+        setBoardState(stagedState)
+    }
 
     function generateEvent(startHour: Date, endHour: Date, content: string, Day: IDay): void {
         const eventID = uuidv4()
@@ -138,11 +137,10 @@ function App() {
             draftState.eventDayCollection[Day.dayID].eventCollection.push(eventDraft)
         })
 
-        setBoardState(nextState)
+        validate(eventID, nextState)
     }
 
     function updateEvent(event: IEvent, endTime: Date): void { // TODO: Change endtime to a config/option method
-        console.log(event)
         const nextState: IBoard = produce(boardState, draftState => {
             draftState.cardCollection[event.eventID].endTime = endTime //TODO: Make it such that there's only one source of truth.
             draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
@@ -153,7 +151,11 @@ function App() {
             })
         })
 
-        setBoardState(nextState)
+        validate(event.eventID, nextState)
+    }
+
+    function deleteEvent(eventID: string): void {
+        return
     }
 
 
@@ -186,6 +188,19 @@ function App() {
         }
     }
 
+    function resolveMouseMoveHandler(dayOfWeek: Date, event) {
+        if (dragging === undefined) return
+        if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
+            return;
+        }
+        const { index } = comparison(event.nativeEvent.offsetY)
+        const endHour = dateFns.add(dayOfWeek, {
+            minutes: 30 * index
+        })
+        updateEvent(dragging, endHour)
+
+    }
+
     function comparison(coordinate: number) {
         let minVal = Number.MAX_SAFE_INTEGER;
         let coord = -1;
@@ -215,7 +230,6 @@ function App() {
     }
 
     function mouseDownEvent(event, card: IEvent) {
-        console.log(event)
         setDragging(card)
     }
 
@@ -228,11 +242,12 @@ function App() {
         <div className='App'>
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
-                    {weekArray.map((dayOfWeek, rowViewID) => (
+                    {/* {weekArray.map((dayOfWeek, rowViewID) => (
                         <Row
                             dayOfWeek={dayOfWeek}
                             key={rowViewID} // TODO: Maybe change the key to ID?
                             resolveMouseUpHandler={resolveMouseUpHandler}
+                            resolveMouseMoveHandler={resolveMouseMoveHandler}
                             logMouseEvent={logMouseEvent}
                             setNavigate={setNavigate} // TODO: Is there a way to setNavigate without passing it to Row?
                             rowHeight={boardState.viewportHeight}>
@@ -246,7 +261,7 @@ function App() {
                                 />
                             ))}
                         </Row>
-                    ))}
+                    ))} */}
                 </div>
             </DndProvider>
         </div>
