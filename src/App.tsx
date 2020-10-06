@@ -47,7 +47,7 @@ interface IBoard {
 
 
 class BoardGenerator { // Maybe change this to a "function setup" or init instead.
-    constructor(viewportHeight) {
+    constructor(viewportHeight: number) {
         this._numRows = 5
         this._viewportHeight = viewportHeight
         this._heightIndex = this._generateHeightIndex(24, 2)
@@ -189,11 +189,17 @@ function App() {
     }
 
     function resolveMouseMoveHandler(dayOfWeek: Date, event) {
+        event.persist()
         if (dragging === undefined) return
+        const eventHeightRatio = dateFns.differenceInMinutes(dragging.startTime, dragging.date) / (24 * 60);
+        let comparator: number
         if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
-            return;
+            comparator = event.nativeEvent.offsetY + eventHeightRatio * boardState.viewportHeight
+        } else {
+            comparator = event.nativeEvent.offsetY
         }
-        const { index } = comparison(event.nativeEvent.offsetY)
+        console.log(comparator)
+        const { index } = comparison(comparator)
         const endHour = dateFns.add(dayOfWeek, {
             minutes: 30 * index
         })
@@ -217,7 +223,7 @@ function App() {
 
     function logMouseEvent(rowID, event) {
         if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
-            return;
+            return
         }
         if (navigate) {
             const coordinate = event.nativeEvent.offsetY
@@ -237,12 +243,11 @@ function App() {
         console.log(dragging)
     }, [dragging])
 
-
     return (
         <div className='App'>
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
-                    {/* {weekArray.map((dayOfWeek, rowViewID) => (
+                    {weekArray.map((dayOfWeek, rowViewID) => (
                         <Row
                             dayOfWeek={dayOfWeek}
                             key={rowViewID} // TODO: Maybe change the key to ID?
@@ -261,7 +266,7 @@ function App() {
                                 />
                             ))}
                         </Row>
-                    ))} */}
+                    ))}
                 </div>
             </DndProvider>
         </div>
