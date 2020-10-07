@@ -1,6 +1,8 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import Row from './components/Row';
 import Card from './components/Card';
+import Modal from './components/Modal';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import produce from 'immer';
@@ -21,6 +23,7 @@ interface IEvent {
     endTime: Date
     endTimePreview: Date | null // Used for validating updating the end-hour.
     content: string
+    preview?: boolean
 }
 
 interface IDay {
@@ -43,6 +46,19 @@ interface IBoard {
     heightIndex: IHeightIndex // Should probably not be state-dependent. 
     cardCollection: ISearchEvent
     eventDayCollection: ISearchDay
+}
+
+interface IOptions {
+    start: Date
+    end: Date
+    day: IDay
+}
+
+interface IEventUpdateConfig {
+    startTime?: Date
+    endTime?: Date
+    content?: string
+    date?: Date
 }
 
 
@@ -105,22 +121,20 @@ class BoardGenerator { // Maybe change this to a "function setup" or init instea
 
 const Board = new BoardGenerator(ROW_HEIGHT)
 
-// <!-------------------------------------- TODO --------------------------------------!>
-// Register React DND for all drag-related events (moving cards from one row to another, moving cards within rows, expanding cards, etc.)
-// Configure Refactoring your state object & Incorporate a validator before any state changes.
-// Configure "Preview" Layer for updating card.
-// Continue Refactoring & Updating Application.
 function App() {
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState());
     const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek());
     const [navigate, setNavigate] = React.useState<boolean>(false) // TODO: Update Name
     const [dragging, setDragging] = React.useState<IEvent | undefined>(undefined)
+    const [modal, setModal] = React.useState<boolean>(false)
+    const [modalOptions, setModalOptions] = React.useState<IOptions>()
 
     function validate(eventID: string, stagedState: IBoard): void {
-        setBoardState(stagedState)
+        return
     }
 
-    function generateEvent(startHour: Date, endHour: Date, content: string, Day: IDay): void {
+    // GenerateEvent will return a promise. It (eventually) will resolve if there is no time confliction.
+    function useGenerateEvent(startHour: Date, endHour: Date, content: string, Day: IDay, preview: boolean): IEvent{
         const eventID = uuidv4()
         const eventDraft: IEvent = {
             eventID: eventID,
@@ -130,6 +144,7 @@ function App() {
             endTime: endHour,
             endTimePreview: null,
             content: content,
+            preview: preview, 
         }
 
         const nextState: IBoard = produce(boardState, draftState => {
@@ -137,25 +152,43 @@ function App() {
             draftState.eventDayCollection[Day.dayID].eventCollection.push(eventDraft)
         })
 
-        validate(eventID, nextState)
+        validate(eventID, nextState) // This does nothing for now.
+        let event
+        React.useEffect(() => {
+            console.log("hi")
+        }, [])
+        setBoardState(nextState) 
+        return event
     }
 
-    function updateEvent(event: IEvent, endTime: Date): void { // TODO: Change endtime to a config/option method
+
+    function updateEvent(event: IEvent, config: IEventUpdateConfig): void { // TODO: Change endtime to a config/option method
+
         const nextState: IBoard = produce(boardState, draftState => {
-            draftState.cardCollection[event.eventID].endTime = endTime //TODO: Make it such that there's only one source of truth.
+            draftState.cardCollection[event.eventID].endTime = config.endTime //TODO: Make it such that there's only one source of truth.
             draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
                 if (singleEvent.eventID === event.eventID) {
-                    singleEvent.endTime = endTime
+                    singleEvent.endTime = config.endTime
                 }
                 return singleEvent
             })
         })
 
         validate(event.eventID, nextState)
+        setBoardState(nextState)
     }
 
     function deleteEvent(eventID: string): void {
         return
+    }
+
+    function emitModal(defaultStart: Date, defaultEnd: Date, rowEvent: IDay): void {
+        setModalOptions({
+            start: defaultStart,
+            end: defaultEnd,
+            day: rowEvent
+        })
+        setModal(true)
     }
 
 
@@ -184,7 +217,7 @@ function App() {
             const oneHourLater = dateFns.add(startHour, {
                 hours: 1,
             })
-            generateEvent(startHour, oneHourLater, "Hello, World", boardState.eventDayCollection[hashDate(dayOfWeek)])
+            emitModal(startHour, oneHourLater, boardState.eventDayCollection[hashDate(dayOfWeek)])
         }
     }
 
@@ -244,6 +277,7 @@ function App() {
     }, [dragging])
 
     return (
+      <>
         <div className='App'>
             <DndProvider backend={HTML5Backend}>
                 <div className='container'>
@@ -270,6 +304,12 @@ function App() {
                 </div>
             </DndProvider>
         </div>
+        { modal ? ( 
+            ReactDOM.createPortal(
+                <Modal generator={useGenerateEvent} options={modalOptions} setModal={setModal} updater={updateEvent}/>,
+                document.getElementById("root")
+            )) : undefined }
+    </>
     );
 }
 

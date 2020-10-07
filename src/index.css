@@ -16,6 +16,10 @@ code {
     margin: 20px auto;
 }
 
+#root {
+    position: relative;
+}
+
 p {
     margin: 0;
 }
