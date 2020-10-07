@@ -14,6 +14,7 @@ export default function Card({ event, ...props }) {
             isDragging: monitor.isDragging()
         })
     });
+    console.log(event)
     const formattedStartTime = dateFns.format(event.startTime, 'hh:mm a');
     const formattedEndTime = dateFns.format(event.endTime, 'hh:mm a');
     const eventIntRatio = dateFns.differenceInMinutes(event.endTime, event.startTime) / (24 * 60);

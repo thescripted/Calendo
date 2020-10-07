@@ -3,55 +3,46 @@ import styles from './styles/Modal.module.css';
 import * as dateFns from 'date-fns';
 import produce from 'immer';
 
-export default function Modal({ generator, updater, options, setModal}) {
+export default function Modal({ generator, updater, options, setModal, boardState}) {
 
-    const defaultOptions = [
-        options.start,
-        options.end,
-        "Hello, World",
-        options.day,
-        false,
-    ]
+    const defaultOptions = {
+        startTime: options.startTime,
+        endTime: options.endTime,
+        content: "Hello, World",
+        date: options.date,
+        day: options.day,
+        preview: false,
+    }
 
     const [eventOptions, setEventOptions] = React.useState(defaultOptions)
     const [eventObject, setEventObject] = React.useState(undefined)
-    const formattedStartTime = dateFns.format(options.start, 'hh:mm a');
-    const formattedEndTime = dateFns.format(options.end, 'hh:mm a');
+    const [ID, setID] = React.useState(undefined)
+    const formattedStartTime = dateFns.format(options.startTime, 'hh:mm a');
+    const formattedEndTime = dateFns.format(options.endTime, 'hh:mm a');
     const formattedDate = dateFns.format(options.day.date, 'EEEE MMMM do');
 
-    const eventTesting = generator(...defaultOptions)
-    console.log(eventTesting)
-
+    React.useEffect(() => {
+        if (ID == undefined) {
+            setID(generator(defaultOptions))
+        }
+        setEventObject(boardState.cardCollection[ID])
+    }, [boardState, ID])
 
     React.useEffect(() => {
-        console.log("I'm triggered")
-        console.log(eventObject)
         if (eventObject !== undefined) {
-            updater(eventObject, {
-                startTime: eventOptions[0],
-                endTime: eventOptions[1],
-                content: eventOptions[2],
-                date: eventOptions[3]
-            })
+            updater(eventObject, eventOptions)
         }
-    }, [eventOptions] )
+    }, [eventOptions, eventObject])
 
     function updateEventContent(e) {
         const newState = produce(eventOptions, draftState => {
-            draftState[2] = e.target.value
+            draftState.content = e.target.value
         });
         setEventOptions(newState)
-        console.log(newState)
     }
 
     function publishEvent() {
-        updater(eventObject, {
-            startTime: eventOptions[0],
-            endTime: eventOptions[1],
-            content: eventOptions[2],
-            date: eventOptions[3],
-            preview: false
-        })
+        updater(eventObject, eventOptions)
     }
     return (
         <div className={styles.modal_wrapper}>
