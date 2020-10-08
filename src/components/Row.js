@@ -6,8 +6,7 @@ import styles from './styles/Row.module.css';
 
 export default function Row({
     children,
-    resolveMouseUpHandler,
-    resolveMouseMoveHandler,
+    eventHandlers,
     dayOfWeek,
     rowHeight,
     ...props
@@ -16,9 +15,8 @@ export default function Row({
         <div
             className={`${styles.row} rowEvent`}
             style={{ height: `${rowHeight}px` }}
-            onClick={event => resolveMouseUpHandler(dayOfWeek, event)}
-            onMouseMove={event => resolveMouseMoveHandler(dayOfWeek, event)}
-            // onMouseUp={() => props.setNavigate(false)}
+            onMouseMoveCapture={eventHandlers.mouseMove}
+            onMouseUp={eventHandlers.mouseUp}
         >
             {children}
         </div>

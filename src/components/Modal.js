@@ -3,28 +3,30 @@ import styles from './styles/Modal.module.css';
 import * as dateFns from 'date-fns';
 import produce from 'immer';
 
-export default function Modal({ generator, updater, options, setModal, boardState}) {
-
+export default function Modal({ generator, updater, deleter, config, setModal, boardState}) {
     const defaultOptions = {
-        startTime: options.startTime,
-        endTime: options.endTime,
-        content: "Hello, World",
-        date: options.date,
-        day: options.day,
-        preview: false,
+        startTime: config.startTime,
+        endTime: config.endTime,
+        content: "",
+        date: config.date,
+        day: config.day,
+        preview: true,
     }
 
     const [eventOptions, setEventOptions] = React.useState(defaultOptions)
     const [eventObject, setEventObject] = React.useState(undefined)
     const [ID, setID] = React.useState(undefined)
-    const formattedStartTime = dateFns.format(options.startTime, 'hh:mm a');
-    const formattedEndTime = dateFns.format(options.endTime, 'hh:mm a');
-    const formattedDate = dateFns.format(options.day.date, 'EEEE MMMM do');
+    const formattedStartTime = dateFns.format(config.startTime, 'hh:mm a');
+    const formattedEndTime = dateFns.format(config.endTime, 'hh:mm a');
+    const formattedDate = dateFns.format(config.day.date, 'EEEE MMMM do');
+
+    //This is horrific.
+    React.useEffect(() => {
+        const eventID = generator(defaultOptions)
+        setID(eventID)
+    }, []);
 
     React.useEffect(() => {
-        if (ID == undefined) {
-            setID(generator(defaultOptions))
-        }
         setEventObject(boardState.cardCollection[ID])
     }, [boardState, ID])
 
@@ -32,9 +34,9 @@ export default function Modal({ generator, updater, options, setModal, boardStat
         if (eventObject !== undefined) {
             updater(eventObject, eventOptions)
         }
-    }, [eventOptions, eventObject])
+    }, [eventOptions])
 
-    function updateEventContent(e) {
+    function updateEventOptions(e) {
         const newState = produce(eventOptions, draftState => {
             draftState.content = e.target.value
         });
@@ -42,21 +44,36 @@ export default function Modal({ generator, updater, options, setModal, boardStat
     }
 
     function publishEvent() {
-        updater(eventObject, eventOptions)
+        if (eventObject.content === "") {
+            deleter(eventObject)
+        } else {
+        updater(eventObject, {...eventOptions, preview: false })
+        }
     }
+
+    function clearState() {
+        setModal(false)
+        setEventOptions(undefined)
+        setEventObject(undefined)
+    }
+
     return (
         <div className={styles.modal_wrapper}>
             <div className={styles.modal_container}>
                 <div className={styles.modal_header}>
-                    <button className={styles.x_icon} onClick={() => setModal(false)} />
+                    <button className={styles.x_icon} onClick={() => {
+                        clearState()
+                        deleter(eventObject)
+                        }
+                    } />
                 </div>
                 <div className={styles.modal_main}>
                     <textarea
                         autoFocus
                         className={`${styles.hover} ${styles.hover_3}`}
                         placeholder='Add Title'
-                        value={eventOptions[2]}
-                        onChange={updateEventContent}
+                        value={eventOptions.content}
+                        onChange={updateEventOptions}
                         rows='1'
                         wrap='soft'
                     ></textarea>
@@ -73,7 +90,7 @@ export default function Modal({ generator, updater, options, setModal, boardStat
                 <div className={styles.modal_footer}>
                     <button onClick={() => {
                         publishEvent()
-                        setModal(false)
+                        clearState()
                         } 
                     }>Save</button>
                 </div>

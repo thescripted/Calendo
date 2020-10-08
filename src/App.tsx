@@ -1,15 +1,45 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import Row from './components/Row';
-import Card from './components/Card';
-import Modal from './components/Modal';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import React from 'react'
+import ReactDOM from 'react-dom'
+import Row from './components/Row'
+import Card from './components/Card'
+import Modal from './components/Modal'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import produce from 'immer';
 import { ROW_HEIGHT } from './support/Constant'
 import { hashDate } from './support'
-import { v4 as uuidv4 } from "uuid"
+import { v4 as uuidv4 } from 'uuid'
 import * as dateFns from 'date-fns'
+
+function getCursorPosition(event) {
+    return [event.pageX, event.pageY]
+}
+
+/**
+ * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
+ * @param {number} The absolute y-coordinate, relative to the page.
+ * @returns {number} Returns the coordinate relative to the calendar.
+ */
+
+function getRelativePosition(coordinate: number): number {
+    // currently unused. It will be more complicated when the calendar is placed into a scrollable container.
+    const calendarRoot = document.getElementById('calendar_root')
+    const HARDCODED_ROOT_TOP_OFFSET = 20
+    return coordinate - HARDCODED_ROOT_TOP_OFFSET
+}
+
+function getNearestSlot(rawCoordinate: number, slots: number[]): number {
+    let minVal = Number.MAX_SAFE_INTEGER;
+    let coord = -1;
+    slots.forEach( function(rowCoord, idx) { // a binary search would work better. Whatever.
+        const value: number = Math.abs(rowCoord - rawCoordinate);
+        if (minVal > value) {
+            coord = idx;
+            minVal = value;
+        }
+    });
+    return coord
+}
 
 interface IHeightIndex extends Array<number> {
     [index: number]: number
@@ -48,12 +78,6 @@ interface IBoard {
     eventDayCollection: ISearchDay
 }
 
-interface IOptions {
-    start: Date
-    end: Date
-    day: IDay
-}
-
 interface IEventUpdateConfig {
     startTime?: Date
     endTime?: Date
@@ -61,6 +85,15 @@ interface IEventUpdateConfig {
     date?: Date
     day?: IDay
     preview?: boolean
+}
+
+interface IEventState {
+    dragging: IEvent | undefined
+    carrying: IEvent | undefined
+    modal: boolean
+    isDragging: boolean
+    isCarrying: boolean
+    modalConfig: IEventUpdateConfig | undefined
 }
 
 
@@ -84,7 +117,6 @@ class BoardGenerator { // Maybe change this to a "function setup" or init instea
         let hourArray = Array.from({ length: hour * subdivision }).map(function (_, idx) {
             return HourToViewScale * idx + Offset
         })
-        console.log(hourArray)
         return hourArray
     }
 
@@ -123,20 +155,36 @@ class BoardGenerator { // Maybe change this to a "function setup" or init instea
 
 const Board = new BoardGenerator(ROW_HEIGHT)
 
+const defaultEventState = {
+    dragging: undefined,
+    carrying: undefined,
+    modal: false,
+    isDragging: false,
+    isCarrying: false,
+    modalConfig: undefined
+}
+
 function App() {
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState());
+    const [eventState, setEventState] = React.useState<IEventState>(defaultEventState)
     const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek());
-    const [navigate, setNavigate] = React.useState<boolean>(false) // TODO: Update Name
-    const [dragging, setDragging] = React.useState<IEvent | undefined>(undefined)
-    const [modal, setModal] = React.useState<boolean>(false)
-    const [modalOptions, setModalOptions] = React.useState<IEventUpdateConfig>()
+    
+    function getEvent(eventID: string): IEvent | undefined {
+        return boardState.cardCollection[eventID]
+    }
 
+    function getDay(dayID: string): IDay | undefined {
+        return boardState.eventDayCollection[dayID]
+    }
     function validate(eventID: string, stagedState: IBoard): void {
         return
     }
 
-    // GenerateEvent will return a promise. It (eventually) will resolve if there is no time confliction.
-    function generateEvent(options: IEventUpdateConfig): string  { 
+    function setModal(value: boolean) { // Wrapper for setEventState
+        setEventState({...eventState, modal: value, modalConfig: undefined })
+    }
+  
+    function generateEvent(options: IEventUpdateConfig): string {
         const eventID = uuidv4()
         const eventDraft: IEvent = {
             eventID: eventID,
@@ -146,7 +194,7 @@ function App() {
             endTime: options.endTime,
             endTimePreview: null,
             content: options.content,
-            preview: options.preview, 
+            preview: options.preview,
         }
 
         const nextState: IBoard = produce(boardState, draftState => {
@@ -154,174 +202,178 @@ function App() {
             draftState.eventDayCollection[options.day.dayID].eventCollection.push(eventDraft)
         })
 
-        validate(eventID, nextState) // This does nothing for now.
+
+        // This is the ugliest block of code I will ever write.
+        // Why doesnt' setState accept a callback function? The world will never know.
+        // I'm sorry. Forgive me. 
+        // Recruiters, please continue scrolling past this horrendus mess.
+        // But without further ado...
+
+        validate(eventID, nextState)
         setBoardState(nextState)
         return eventID
     }
 
-
     function updateEvent(event: IEvent, options: IEventUpdateConfig): void {
-        console.log(options)
-        console.log("updating event!")
-        // This is so ugly. Don't even look at this. I am tired.
         const nextState: IBoard = produce(boardState, draftState => {
-            draftState.cardCollection[event.eventID].startTime = options.startTime //TODO: Make it such that there's only one source of truth.
-            draftState.cardCollection[event.eventID].endTime = options.endTime
-            draftState.cardCollection[event.eventID].content = options.content 
-            draftState.cardCollection[event.eventID].preview = options.preview
-            draftState.cardCollection[event.eventID].date = options.date 
-            draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
+            const cardItem = draftState.cardCollection[event.eventID]
+            draftState.cardCollection[event.eventID] = { ...cardItem, ...options }
+
+            const eventArray = draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
                 if (singleEvent.eventID === event.eventID) {
-                    singleEvent.startTime= options.startTime
-                    singleEvent.endTime = options.endTime
-                    singleEvent.content = options.content
-                    singleEvent.preview = options.preview
-                    singleEvent.date = options.date
+                    return { ...singleEvent, ...options }
                 }
                 return singleEvent
             })
+            draftState.eventDayCollection[event.dayID].eventCollection = eventArray
         })
-
         validate(event.eventID, nextState)
-        console.log(nextState)
         setBoardState(nextState)
     }
 
-    function deleteEvent(eventID: string): void {
-        return
-    }
-
-    function emitModal(defaultStart: Date, defaultEnd: Date, rowEvent: IDay): void {
-        setModalOptions({
-            startTime: defaultStart,
-            endTime: defaultEnd,
-            date: rowEvent.date,
-            day: rowEvent,
-            content: "",
-            preview: false
+    function deleteEvent(event: IEvent): void {
+        const nextState: IBoard = produce(boardState, draftState => {
+            delete draftState.cardCollection[event.eventID]
+            const eventArray = draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
+                if (singleEvent.eventID === event.eventID) {
+                    return undefined
+                }
+                return singleEvent
+            }).filter(singleEvent => {
+                return (singleEvent !== undefined)
+            })
+            draftState.eventDayCollection[event.dayID].eventCollection = eventArray
         })
-        setModal(true)
+        validate(event.eventID, nextState)
+        setBoardState(nextState)
     }
 
 
-    function resolveMouseUpHandler(dayOfWeek: Date, event) {
+    function emitModal(eventID: string, location: any): void {
+        console.log(eventID)
+        const cardEvent = getEvent(eventID)
+        console.log(cardEvent)
+        if (cardEvent !== undefined) {
+            const defaultModalConfig = {
+                startTime: cardEvent.startTime,
+                endTime: cardEvent.endTime,
+                date: cardEvent.date,
+                day: getDay(cardEvent.dayID),
+                content: "",
+                preview: false
+            }
+            setEventState({...eventState, modal: true, modalConfig: defaultModalConfig })
+        }
+    }
+
+
+    function finalizeCardMovement(cardEvent: IEvent) {
+        updateEvent(cardEvent, { preview: false })
+        setEventState({...eventState, dragging: undefined, isDragging: false })
+    }
+
+    function expandCardDown(event: IEvent, pageYCoordinate: number) {
+        const yPosition = getRelativePosition(pageYCoordinate)
+        const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
+        const date = event.date
+        const updatedEndTime = dateFns.add(date, {
+            minutes: 30 * slotIndex
+        })
+        updateEvent(event, { endTime: updatedEndTime, preview: true }) // Triggers an event update
+    }
+
+    // needs a better name. Basically, this checks if the event target is not a card
+    function isTargetEmpty(event) {
+        return Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)
+    }
+
+    // Creates a preview event.
+    function createPreviewEvent(date: Date, yCoordinate: number): string {
+        const yPosition = getRelativePosition(yCoordinate)
+        const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
+        const startTime = dateFns.add(date, {
+            minutes: 30 * slotIndex
+        })
+        const defaultEndTime = dateFns.add(startTime, {
+            minutes: 60 // 1 Hour by default.
+        })
+        const eventConfig = {
+            startTime: startTime,
+            endTime: defaultEndTime,
+            date: date,
+            day: boardState.eventDayCollection[hashDate(date)], // For now a day will always exists. This isn't always true.
+            content: "Untitled Event",
+            preview: true
+        }
+        return generateEvent(eventConfig)
+    }
+
+    function rowMouseUpHandler(dayOfWeek: Date, event) {
         event.persist();
-        if (dragging !== undefined) {
-            const { index } = comparison(event.nativeEvent.offsetY)
-            const endHour = dateFns.add(dayOfWeek, {
-                minutes: 30 * index
-            })
-            updateEvent(dragging, {endTime: endHour})
-
-            setDragging(undefined)
+        const [_, yCoord] = getCursorPosition(event)
+        if (eventState.isDragging) {
+            finalizeCardMovement(eventState.dragging)
             return
-        } else {
-            // Kinda iffy using document.getElement in a react application. This should never get deleted although.
-            if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
-                return;
+        } 
+        if (isTargetEmpty(event)){ // Creating a new Card only happens if a card isn't already there.
+            const modalLocation = {
+                x: 0,
+                y: 0
             }
-            console.log(`x-coord: ${event.nativeEvent.offsetX}, y-coord: ${event.nativeEvent.offsetY}`);
-            const { index, value } = comparison(event.nativeEvent.offsetY)
-            const startHour = dateFns.add(dayOfWeek, { // by default, day of week starts at zero. Will need to push this to UTC. Later.
-                minutes: 30 * index
-            })
-
-            const oneHourLater = dateFns.add(startHour, {
-                hours: 1,
-            })
-            emitModal(startHour, oneHourLater, boardState.eventDayCollection[hashDate(dayOfWeek)])
+            createPreviewEvent(dayOfWeek, yCoord)
         }
     }
 
-    function resolveMouseMoveHandler(dayOfWeek: Date, event) {
+    function rowMouseMoveHandler(dayOfWeek: Date, event): void {
         event.persist()
-        if (dragging === undefined) return
-        const eventHeightRatio = dateFns.differenceInMinutes(dragging.startTime, dragging.date) / (24 * 60);
-        let comparator: number
-        if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
-            comparator = event.nativeEvent.offsetY + eventHeightRatio * boardState.viewportHeight
-        } else {
-            comparator = event.nativeEvent.offsetY
-        }
-        console.log(comparator)
-        const { index } = comparison(comparator)
-        const endHour = dateFns.add(dayOfWeek, {
-            minutes: 30 * index
-        })
-        updateEvent(dragging, {endTime: endHour})
-
-    }
-
-    function comparison(coordinate: number) {
-        let minVal = Number.MAX_SAFE_INTEGER;
-        let coord = -1;
-        boardState.heightIndex.forEach(function (rowCoord, idx) { // a binary search would work better. Whatever.
-            const value: number = Math.abs(rowCoord - coordinate);
-            if (minVal > value) {
-                coord = idx;
-                minVal = value;
-            }
-        });
-        return { index: coord, value: boardState.heightIndex[coord] };
-    }
-
-
-    function logMouseEvent(rowID, event) {
-        if (!Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)) {
-            return
-        }
-        if (navigate) {
-            const coordinate = event.nativeEvent.offsetY
-            console.log(`I am Row: ${rowID}: ${coordinate}`);
-            // registerCardPreviewState(draggedCard, coordinate)
-        } else {
-            //TODO: Register mouse event
-            return
+        event.stopPropagation()
+        const [_, yCoord] = getCursorPosition(event)
+        if (eventState.isDragging) { // We're dragging a card. Update the endTime.
+            expandCardDown(eventState.dragging, yCoord)
+        } else if (eventState.isCarrying) {
+            console.log("Carrying Card over Date: ", dayOfWeek)
         }
     }
 
-    function mouseDownEvent(event, card: IEvent) {
-        setDragging(card)
+    function cardMouseDownHandler(event, card: IEvent) {
+        setEventState({...eventState, dragging: card, isDragging: true})
     }
 
-    React.useEffect(() => {
-        console.log(dragging)
-    }, [dragging])
 
     return (
-      <>
-        <div className='App'>
-            <DndProvider backend={HTML5Backend}>
-                <div className='container'>
-                    {weekArray.map((dayOfWeek, rowViewID) => (
-                        <Row
-                            dayOfWeek={dayOfWeek}
-                            key={rowViewID} // TODO: Maybe change the key to ID?
-                            resolveMouseUpHandler={resolveMouseUpHandler}
-                            resolveMouseMoveHandler={resolveMouseMoveHandler}
-                            logMouseEvent={logMouseEvent}
-                            setNavigate={setNavigate} // TODO: Is there a way to setNavigate without passing it to Row?
-                            rowHeight={boardState.viewportHeight}>
-                            {boardState.eventDayCollection[hashDate(dayOfWeek)].eventCollection.map((event, dayViewID) => (
-                                <Card
-                                    event={event}
-                                    key={`${rowViewID} + ${dayViewID}`}
-                                    scale={boardState.viewportHeight}
-                                    grid={boardState.heightIndex}
-                                    mouseDown={mouseDownEvent}
-                                />
-                            ))}
-                        </Row>
-                    ))}
-                </div>
-            </DndProvider>
-        </div>
-        { modal ? ( 
-            ReactDOM.createPortal(
-                <Modal generator={generateEvent} options={modalOptions} setModal={setModal} updater={updateEvent} boardState={boardState}/>,
-                document.getElementById("root")
-            )) : undefined }
-    </>
+        <>
+            <div className='App'>
+                <DndProvider backend={HTML5Backend}>
+                    <div id='calendar_root' className='container'>
+                        {weekArray.map((dayOfWeek, rowViewID) => (
+                            <Row
+                                dayOfWeek={dayOfWeek}
+                                key={rowViewID} // TODO: Maybe change the key to ID?
+                                eventHandlers={{
+                                    mouseMove: rowMouseMoveHandler.bind(null, dayOfWeek),
+                                    mouseUp: rowMouseUpHandler.bind(null, dayOfWeek)
+                                }}
+                                rowHeight={boardState.viewportHeight}>
+                                {getDay(hashDate(dayOfWeek)).eventCollection.map((event, dayViewID) => (
+                                    <Card
+                                        event={event}
+                                        key={`${rowViewID} + ${dayViewID}`}
+                                        scale={boardState.viewportHeight}
+                                        grid={boardState.heightIndex}
+                                        mouseDown={cardMouseDownHandler}
+                                    />
+                                ))}
+                            </Row>
+                        ))}
+                    </div>
+                </DndProvider>
+            </div>
+            { eventState.modal ? (
+                ReactDOM.createPortal(
+                    <Modal generator={generateEvent} deleter={deleteEvent} config={eventState.modalConfig} setModal={setModal} updater={updateEvent} boardState={boardState} />,
+                    document.getElementById("root")
+                )) : undefined}
+        </>
     );
 }
 
