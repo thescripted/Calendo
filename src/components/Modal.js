@@ -3,38 +3,21 @@ import styles from './styles/Modal.module.css';
 import * as dateFns from 'date-fns';
 import produce from 'immer';
 
-export default function Modal({ generator, updater, deleter, config, setModal, boardState}) {
+export default function Modal({ updater, deleter, event, setModal }) {
     const defaultOptions = {
-        startTime: config.startTime,
-        endTime: config.endTime,
-        content: "",
-        date: config.date,
-        day: config.day,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        content: event.content,
+        date: event.date,
+        Day: event.Day,
         preview: true,
     }
-
     const [eventOptions, setEventOptions] = React.useState(defaultOptions)
-    const [eventObject, setEventObject] = React.useState(undefined)
-    const [ID, setID] = React.useState(undefined)
-    const formattedStartTime = dateFns.format(config.startTime, 'hh:mm a');
-    const formattedEndTime = dateFns.format(config.endTime, 'hh:mm a');
-    const formattedDate = dateFns.format(config.day.date, 'EEEE MMMM do');
-
-    //This is horrific.
-    React.useEffect(() => {
-        const eventID = generator(defaultOptions)
-        setID(eventID)
-    }, []);
 
     React.useEffect(() => {
-        setEventObject(boardState.cardCollection[ID])
-    }, [boardState, ID])
-
-    React.useEffect(() => {
-        if (eventObject !== undefined) {
-            updater(eventObject, eventOptions)
-        }
+        updater(event, eventOptions)
     }, [eventOptions])
+    
 
     function updateEventOptions(e) {
         const newState = produce(eventOptions, draftState => {
@@ -44,26 +27,29 @@ export default function Modal({ generator, updater, deleter, config, setModal, b
     }
 
     function publishEvent() {
-        if (eventObject.content === "") {
-            deleter(eventObject)
+        if (event.content === "") {
+            deleter(event)
         } else {
-        updater(eventObject, {...eventOptions, preview: false })
+        updater(event, {...eventOptions, preview: false})
         }
     }
 
     function clearState() {
         setModal(false)
         setEventOptions(undefined)
-        setEventObject(undefined)
     }
+
+    const formattedStartTime = dateFns.format(event.startTime, 'hh:mm a');
+    const formattedEndTime = dateFns.format(event.endTime, 'hh:mm a');
+    const formattedDate = dateFns.format(event.date, 'EEEE MMMM do');
 
     return (
         <div className={styles.modal_wrapper}>
             <div className={styles.modal_container}>
                 <div className={styles.modal_header}>
                     <button className={styles.x_icon} onClick={() => {
+                        deleter(event)
                         clearState()
-                        deleter(eventObject)
                         }
                     } />
                 </div>

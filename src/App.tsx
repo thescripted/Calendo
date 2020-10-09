@@ -20,7 +20,6 @@ function getCursorPosition(event) {
  * @param {number} The absolute y-coordinate, relative to the page.
  * @returns {number} Returns the coordinate relative to the calendar.
  */
-
 function getRelativePosition(coordinate: number): number {
     // currently unused. It will be more complicated when the calendar is placed into a scrollable container.
     const calendarRoot = document.getElementById('calendar_root')
@@ -47,13 +46,12 @@ interface IHeightIndex extends Array<number> {
 
 interface IEvent {
     eventID: string
-    dayID: string
+    Day: IDay
     date: Date
     startTime: Date
     endTime: Date
-    endTimePreview: Date | null // Used for validating updating the end-hour.
     content: string
-    preview?: boolean
+    preview: boolean
 }
 
 interface IDay {
@@ -93,9 +91,14 @@ interface IEventState {
     modal: boolean
     isDragging: boolean
     isCarrying: boolean
-    modalConfig: IEventUpdateConfig | undefined
+    modalEvent: IEvent | undefined
 }
 
+interface IModalInvoker {
+    invoked: boolean
+    eventID: string
+    locator: number
+}
 
 class BoardGenerator { // Maybe change this to a "function setup" or init instead.
     constructor(viewportHeight: number) {
@@ -161,13 +164,33 @@ const defaultEventState = {
     modal: false,
     isDragging: false,
     isCarrying: false,
-    modalConfig: undefined
+    modalEvent: undefined
 }
 
+const defaultModalInvoker: IModalInvoker = {
+    invoked: false,
+    eventID: "",
+    locator: -1
+}
+
+
 function App() {
-    const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState());
+    const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState())
     const [eventState, setEventState] = React.useState<IEventState>(defaultEventState)
-    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek());
+    const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
+    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek())
+
+    // useEffect for modal. only called when the appropriate caller was invoked.
+    // This is very stupid and sloppy. But I cannot attach callbacks to setState using functional components.
+    // And there are many ways the board state can be created/added.
+    // This effect only runs when the correct invoker generates a new card.
+    // The card location/information is stored in that invoker object and passed into the modal here.
+    // Sigh. ):
+    React.useEffect( () => {
+        if (modalInvoker.invoked) {
+            emitModal(getEvent(modalInvoker.eventID), modalInvoker.locator)
+        }
+    }, [boardState.cardCollection, modalInvoker])
     
     function getEvent(eventID: string): IEvent | undefined {
         return boardState.cardCollection[eventID]
@@ -181,18 +204,18 @@ function App() {
     }
 
     function setModal(value: boolean) { // Wrapper for setEventState
-        setEventState({...eventState, modal: value, modalConfig: undefined })
+        setEventState({...eventState, modal: value, modalEvent: undefined })
+        setModalInvoker(defaultModalInvoker)
     }
   
     function generateEvent(options: IEventUpdateConfig): string {
         const eventID = uuidv4()
         const eventDraft: IEvent = {
             eventID: eventID,
-            dayID: options.day.dayID,
             date: options.date,
+            Day: options.day,
             startTime: options.startTime,
             endTime: options.endTime,
-            endTimePreview: null,
             content: options.content,
             preview: options.preview,
         }
@@ -201,13 +224,6 @@ function App() {
             draftState.cardCollection[eventID] = eventDraft
             draftState.eventDayCollection[options.day.dayID].eventCollection.push(eventDraft)
         })
-
-
-        // This is the ugliest block of code I will ever write.
-        // Why doesnt' setState accept a callback function? The world will never know.
-        // I'm sorry. Forgive me. 
-        // Recruiters, please continue scrolling past this horrendus mess.
-        // But without further ado...
 
         validate(eventID, nextState)
         setBoardState(nextState)
@@ -219,13 +235,13 @@ function App() {
             const cardItem = draftState.cardCollection[event.eventID]
             draftState.cardCollection[event.eventID] = { ...cardItem, ...options }
 
-            const eventArray = draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
+            const eventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
                 if (singleEvent.eventID === event.eventID) {
                     return { ...singleEvent, ...options }
                 }
                 return singleEvent
             })
-            draftState.eventDayCollection[event.dayID].eventCollection = eventArray
+            draftState.eventDayCollection[event.Day.dayID].eventCollection = eventArray
         })
         validate(event.eventID, nextState)
         setBoardState(nextState)
@@ -234,7 +250,7 @@ function App() {
     function deleteEvent(event: IEvent): void {
         const nextState: IBoard = produce(boardState, draftState => {
             delete draftState.cardCollection[event.eventID]
-            const eventArray = draftState.eventDayCollection[event.dayID].eventCollection.map(singleEvent => {
+            const eventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
                 if (singleEvent.eventID === event.eventID) {
                     return undefined
                 }
@@ -242,28 +258,15 @@ function App() {
             }).filter(singleEvent => {
                 return (singleEvent !== undefined)
             })
-            draftState.eventDayCollection[event.dayID].eventCollection = eventArray
+            draftState.eventDayCollection[event.Day.dayID].eventCollection = eventArray
         })
         validate(event.eventID, nextState)
         setBoardState(nextState)
     }
 
 
-    function emitModal(eventID: string, location: any): void {
-        console.log(eventID)
-        const cardEvent = getEvent(eventID)
-        console.log(cardEvent)
-        if (cardEvent !== undefined) {
-            const defaultModalConfig = {
-                startTime: cardEvent.startTime,
-                endTime: cardEvent.endTime,
-                date: cardEvent.date,
-                day: getDay(cardEvent.dayID),
-                content: "",
-                preview: false
-            }
-            setEventState({...eventState, modal: true, modalConfig: defaultModalConfig })
-        }
+    function emitModal(event: IEvent, location: any): void {
+        setEventState({...eventState, modal: true, modalEvent: event})
     }
 
 
@@ -288,7 +291,7 @@ function App() {
     }
 
     // Creates a preview event.
-    function createPreviewEvent(date: Date, yCoordinate: number): string {
+    function createPreviewEvent(date: Date, yCoordinate: number): void {
         const yPosition = getRelativePosition(yCoordinate)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
         const startTime = dateFns.add(date, {
@@ -302,10 +305,15 @@ function App() {
             endTime: defaultEndTime,
             date: date,
             day: boardState.eventDayCollection[hashDate(date)], // For now a day will always exists. This isn't always true.
-            content: "Untitled Event",
+            content: "",
             preview: true
         }
-        return generateEvent(eventConfig)
+        const eventID = generateEvent(eventConfig)
+        setModalInvoker({
+            invoked: true,
+            eventID: eventID,
+            locator: 0
+        })
     }
 
     function rowMouseUpHandler(dayOfWeek: Date, event) {
@@ -370,7 +378,7 @@ function App() {
             </div>
             { eventState.modal ? (
                 ReactDOM.createPortal(
-                    <Modal generator={generateEvent} deleter={deleteEvent} config={eventState.modalConfig} setModal={setModal} updater={updateEvent} boardState={boardState} />,
+                    <Modal event={eventState.modalEvent} setModal={setModal} updater={updateEvent} deleter={deleteEvent} />,
                     document.getElementById("root")
                 )) : undefined}
         </>
