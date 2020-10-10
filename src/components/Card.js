@@ -5,7 +5,7 @@ import * as dateFns from 'date-fns';
 import { useDrag } from 'react-dnd';
 import { TYPES } from '../support/Constant';
 
-export default function Card({ event, ...props }) {
+export default function Card({ event, eventHandlers, ...props }) {
     //    const [collectedProps, drag] = useDrag({
         // ID is the main identifier for the card. This should be injected to this component from the model layer.
         // This will be the ID used so the slots know which card to render/update when needed.
@@ -22,13 +22,15 @@ export default function Card({ event, ...props }) {
 
     return (
         <div
+            draggable="true"
+            onDragStart={eventHandlers.dragStart}
             className={styles.card}
             style={{
                 height: `${props.scale * eventIntRatio - 2}px`,
                 top: eventHeightRatio * props.scale,
                 opacity: `${event.preview ? 0.6 : 1.0}`
             }}
-            onMouseDown={e => props.mouseDown(e, event)}
+            onMouseDown={eventHandlers.mouseDown}
             // onMouseUp={() => props.publishDragEvent(props.rowID, props.id, false)}
         >
             <p>{eventContent}</p>

@@ -60,6 +60,12 @@ export default function Modal({ updater, deleter, event, setModal }) {
                         placeholder='Add Title'
                         value={eventOptions.content}
                         onChange={updateEventOptions}
+                        onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                                publishEvent()
+                                clearState()
+                            }
+                        }}
                         rows='1'
                         wrap='soft'
                     ></textarea>

@@ -24,7 +24,9 @@ function getRelativePosition(coordinate: number): number {
     // currently unused. It will be more complicated when the calendar is placed into a scrollable container.
     const calendarRoot = document.getElementById('calendar_root')
     const HARDCODED_ROOT_TOP_OFFSET = 20
-    return coordinate - HARDCODED_ROOT_TOP_OFFSET
+    const SCROLL_OFFSET = calendarRoot.scrollTop
+    const relativeCoordinate = coordinate + SCROLL_OFFSET - HARDCODED_ROOT_TOP_OFFSET
+    return relativeCoordinate
 }
 
 function getNearestSlot(rawCoordinate: number, slots: number[]): number {
@@ -39,6 +41,9 @@ function getNearestSlot(rawCoordinate: number, slots: number[]): number {
     });
     return coord
 }
+// Hack to get blank image for dragEvents
+const invisibleImage = document.createElement('img'); 
+invisibleImage.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 interface IHeightIndex extends Array<number> {
     [index: number]: number
@@ -334,7 +339,8 @@ function App() {
 
     function rowMouseMoveHandler(dayOfWeek: Date, event): void {
         event.persist()
-        event.stopPropagation()
+        // event.stopPropagation()
+        console.log(eventState)
         const [_, yCoord] = getCursorPosition(event)
         if (eventState.isDragging) { // We're dragging a card. Update the endTime.
             expandCardDown(eventState.dragging, yCoord)
@@ -343,16 +349,64 @@ function App() {
         }
     }
 
+
+    function carryCardOver(coordinate: number, preview=true) {
+        if (eventState.isCarrying === false) {
+            throw new Error("There is no event currently being dragged.")
+        }
+
+        const event = eventState.carrying
+        const yPosition = getRelativePosition(coordinate)
+        const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
+        const date = event.date
+
+        const secondsToAdd = (dateFns.getTime(event.endTime) - dateFns.getTime(event.startTime)) / 1000
+
+        const updatedStartTime = dateFns.add(date, {
+            minutes: 30 * slotIndex
+        })
+        const updatedEndTime = dateFns.add(updatedStartTime, {
+            seconds: secondsToAdd
+        })
+
+        updateEvent(event, { startTime: updatedStartTime, endTime: updatedEndTime, preview: preview}) // Triggers an event update
+    }
     function cardMouseDownHandler(event, card: IEvent) {
-        setEventState({...eventState, dragging: card, isDragging: true})
+        // setEventState({...eventState, dragging: card, isDragging: true})
     }
 
+    function containerDragOverHandler(ev) {
+        ev.preventDefault()
+        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
+        carryCardOver(ev.pageY)
+    }
+
+    function containerDragDropHandler(ev) {
+        ev.preventDefault()
+        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
+        carryCardOver(ev.pageY, false)
+        setEventState({
+            ...eventState,
+            carrying: undefined,
+            isCarrying: false
+        })
+    }
+
+    function cardDragStartHandler(cardEvent: IEvent, ev) {
+        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
+        console.log("Triggered!")
+        setEventState({
+            ...eventState,
+            carrying: cardEvent,
+            isCarrying: true
+        })
+    }
 
     return (
         <>
             <div className='App'>
                 <DndProvider backend={HTML5Backend}>
-                    <div id='calendar_root' className='container'>
+                    <div id='calendar_root' className='container' onDragOver={containerDragOverHandler} onDropCapture={containerDragDropHandler}>
                         {weekArray.map((dayOfWeek, rowViewID) => (
                             <Row
                                 dayOfWeek={dayOfWeek}
@@ -368,7 +422,10 @@ function App() {
                                         key={`${rowViewID} + ${dayViewID}`}
                                         scale={boardState.viewportHeight}
                                         grid={boardState.heightIndex}
-                                        mouseDown={cardMouseDownHandler}
+                                        eventHandlers={{
+                                            mouseDown: cardMouseDownHandler.bind(null, event),
+                                            dragStart: cardDragStartHandler.bind(null, event)
+                                        }}
                                     />
                                 ))}
                             </Row>
