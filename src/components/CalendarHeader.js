@@ -16,7 +16,6 @@ export default function CalendarHeader(props) {
 
 function CalendarItem(props) {
     const { day, currentDay } = props
-    console.log(day)
     const localDayOfWeek = dateFns.format(day, 'ccc');
     const localDate = dateFns.format(day, 'do');
 

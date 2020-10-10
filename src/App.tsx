@@ -21,13 +21,15 @@ function getCursorPosition(event) {
  * @param {number} The absolute y-coordinate, relative to the page.
  * @returns {number} Returns the coordinate relative to the calendar.
  */
-function getRelativePosition(coordinate: number): number {
+function getRelativePosition(xCoordinate: number, yCoordinate: number): number[] {
     // currently unused. It will be more complicated when the calendar is placed into a scrollable container.
     const calendarRoot = document.getElementById('calendar_root')
     const HARDCODED_ROOT_TOP_OFFSET = 84 
+    const LEFT_OFFSET = 136
     const SCROLL_OFFSET = calendarRoot.scrollTop
-    const relativeCoordinate = coordinate + SCROLL_OFFSET - HARDCODED_ROOT_TOP_OFFSET
-    return relativeCoordinate
+    const relativeXCoordinate = xCoordinate - LEFT_OFFSET
+    const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - HARDCODED_ROOT_TOP_OFFSET
+    return [relativeXCoordinate, relativeYCoordinate]
 }
 
 function getNearestSlot(rawCoordinate: number, slots: number[]): number {
@@ -87,7 +89,7 @@ interface IEventUpdateConfig {
     endTime?: Date
     content?: string
     date?: Date
-    day?: IDay
+    Day?: IDay
     preview?: boolean
 }
 
@@ -179,7 +181,6 @@ const defaultModalInvoker: IModalInvoker = {
     locator: -1
 }
 
-
 function App() {
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState())
     const [eventState, setEventState] = React.useState<IEventState>(defaultEventState)
@@ -219,7 +220,7 @@ function App() {
         const eventDraft: IEvent = {
             eventID: eventID,
             date: options.date,
-            Day: options.day,
+            Day: options.Day,
             startTime: options.startTime,
             endTime: options.endTime,
             content: options.content,
@@ -228,7 +229,7 @@ function App() {
 
         const nextState: IBoard = produce(boardState, draftState => {
             draftState.cardCollection[eventID] = eventDraft
-            draftState.eventDayCollection[options.day.dayID].eventCollection.push(eventDraft)
+            draftState.eventDayCollection[options.Day.dayID].eventCollection.push(eventDraft)
         })
 
         validate(eventID, nextState)
@@ -241,13 +242,31 @@ function App() {
             const cardItem = draftState.cardCollection[event.eventID]
             draftState.cardCollection[event.eventID] = { ...cardItem, ...options }
 
-            const eventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
-                if (singleEvent.eventID === event.eventID) {
-                    return { ...singleEvent, ...options }
-                }
-                return singleEvent
-            })
-            draftState.eventDayCollection[event.Day.dayID].eventCollection = eventArray
+            // Event has moved to a different date.
+            let oldEventArray: IEvent[]
+            if (options.date && event.date.valueOf() !== options.date.valueOf()) {
+                oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.filter(singleEvent => {
+                    if (singleEvent.eventID !== event.eventID) {
+                        return singleEvent
+                    }
+                })
+                draftState.eventDayCollection[options.Day.dayID].eventCollection.push({...cardItem, ...options})
+                // Since this condition only apply when we are "carrying a card", update that carrying object state.
+                const nextCarryingState = produce(eventState, draftState => {
+                    draftState.carrying = {...draftState.carrying, ...options}
+                })
+                setEventState(nextCarryingState)
+
+            } else {
+                oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
+                    if (singleEvent.eventID === event.eventID) {
+                        return {...cardItem, ...options}
+                    }
+                    return singleEvent
+                })
+            }
+
+            draftState.eventDayCollection[event.Day.dayID].eventCollection = oldEventArray
         })
         validate(event.eventID, nextState)
         setBoardState(nextState)
@@ -281,14 +300,14 @@ function App() {
         setEventState({...eventState, dragging: undefined, isDragging: false })
     }
 
-    function expandCardDown(event: IEvent, pageYCoordinate: number) {
-        const yPosition = getRelativePosition(pageYCoordinate)
+    function expandCardDown(event: IEvent, pageYCoordinate: number, preview=true) {
+        const [_, yPosition] = getRelativePosition(0, pageYCoordinate)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
         const date = event.date
         const updatedEndTime = dateFns.add(date, {
             minutes: 30 * slotIndex
         })
-        updateEvent(event, { endTime: updatedEndTime, preview: true }) // Triggers an event update
+        updateEvent(event, { endTime: updatedEndTime, preview: preview}) // Triggers an event update
     }
 
     // needs a better name. Basically, this checks if the event target is not a card
@@ -298,7 +317,7 @@ function App() {
 
     // Creates a preview event.
     function createPreviewEvent(date: Date, yCoordinate: number): void {
-        const yPosition = getRelativePosition(yCoordinate)
+        const [_, yPosition] = getRelativePosition(0, yCoordinate)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
         const startTime = dateFns.add(date, {
             minutes: 30 * slotIndex
@@ -306,11 +325,11 @@ function App() {
         const defaultEndTime = dateFns.add(startTime, {
             minutes: 60 // 1 Hour by default.
         })
-        const eventConfig = {
+        const eventConfig: IEventUpdateConfig = {
             startTime: startTime,
             endTime: defaultEndTime,
             date: date,
-            day: boardState.eventDayCollection[hashDate(date)], // For now a day will always exists. This isn't always true.
+            Day: boardState.eventDayCollection[hashDate(date)], // For now a day will always exists. This isn't always true.
             content: "",
             preview: true
         }
@@ -338,69 +357,96 @@ function App() {
         }
     }
 
-    function rowMouseMoveHandler(dayOfWeek: Date, event): void {
-        event.persist()
-        // event.stopPropagation()
-        console.log(eventState)
-        const [_, yCoord] = getCursorPosition(event)
-        if (eventState.isDragging) { // We're dragging a card. Update the endTime.
-            expandCardDown(eventState.dragging, yCoord)
-        } else if (eventState.isCarrying) {
-            console.log("Carrying Card over Date: ", dayOfWeek)
-        }
-    }
-
-
-    function carryCardOver(coordinate: number, preview=true) {
+    function carryCardOver(yCoord: number, date: string, preview=true) {
         if (eventState.isCarrying === false) {
-            throw new Error("There is no event currently being dragged.")
+            return
         }
 
         const event = eventState.carrying
-        const yPosition = getRelativePosition(coordinate)
+        const [_, yPosition] = getRelativePosition(0,  yCoord)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
-        const date = event.date
+        
+        let eventDate: Date
+        if (date === undefined) {
+            eventDate = event.date
+        } else {
+            eventDate = new Date(date)
+        }
 
+        const eventDay = getDay(hashDate(eventDate))
         const secondsToAdd = (dateFns.getTime(event.endTime) - dateFns.getTime(event.startTime)) / 1000
 
-        const updatedStartTime = dateFns.add(date, {
+        const updatedStartTime = dateFns.add(eventDate, {
             minutes: 30 * slotIndex
         })
         const updatedEndTime = dateFns.add(updatedStartTime, {
             seconds: secondsToAdd
         })
 
-        updateEvent(event, { startTime: updatedStartTime, endTime: updatedEndTime, preview: preview}) // Triggers an event update
+        updateEvent(event, { startTime: updatedStartTime, endTime: updatedEndTime, date: eventDate, Day: eventDay, preview: preview}) // Triggers an event update
     }
+
     function cardMouseDownHandler(event, card: IEvent) {
         // setEventState({...eventState, dragging: card, isDragging: true})
     }
 
     function containerDragOverHandler(ev) {
+        ev.persist()
         ev.preventDefault()
         ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
-        carryCardOver(ev.pageY)
+        if (eventState.isDragging) {
+            expandCardDown(eventState.dragging, ev.pageY)
+        } else if (eventState.isCarrying) {
+            carryCardOver(ev.pageY, ev.target.dataset.date)
+        }
     }
 
     function containerDragDropHandler(ev) {
         ev.preventDefault()
         ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
-        carryCardOver(ev.pageY, false)
+        if (eventState.isDragging) {
+            expandCardDown(eventState.dragging, ev.pageY, false)
+        } else if (eventState.isCarrying) {
+            carryCardOver(ev.pageY, ev.target.dataset.date, false)
+        }
+
         setEventState({
             ...eventState,
+            dragging: undefined,
+            isDragging: false,
             carrying: undefined,
             isCarrying: false
         })
     }
 
+    // The threshold for a card event is a little complicated.
+    // There should be a minimum and maximum threshold, and 
+    // a percentile of the cardheight in-between.
+    // For now this will just return a number.
+    function getThreshold(height: number): number {
+        return Math.max(12, height*0.1)
+    }
+
     function cardDragStartHandler(cardEvent: IEvent, ev) {
         ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
-        console.log("Triggered!")
-        setEventState({
-            ...eventState,
-            carrying: cardEvent,
-            isCarrying: true
-        })
+        const clientHeight = ev.currentTarget.clientHeight
+        const offsetThreshold = getThreshold(clientHeight)
+        console.log(`Offset: ${ev.nativeEvent.offsetY}, ClientHeight: ${clientHeight}, threshold: ${clientHeight- offsetThreshold}`)
+
+        // If we're near the bottom of the card, expand it. Otherwise, carry it.
+        if (ev.nativeEvent.offsetY > clientHeight - offsetThreshold) {
+            setEventState({
+                ...eventState,
+                dragging: cardEvent,
+                isDragging: true
+            })
+        } else {
+            setEventState({
+                ...eventState,
+                carrying: cardEvent,
+                isCarrying: true
+            })
+        }
     }
 
     return (
@@ -414,11 +460,10 @@ function App() {
                                 dayOfWeek={dayOfWeek}
                                 key={rowViewID} // TODO: Maybe change the key to ID?
                                 eventHandlers={{
-                                    mouseMove: rowMouseMoveHandler.bind(null, dayOfWeek),
                                     mouseUp: rowMouseUpHandler.bind(null, dayOfWeek)
                                 }}
                                 rowHeight={boardState.viewportHeight}>
-                                {getDay(hashDate(dayOfWeek)).eventCollection.map((event, dayViewID) => (
+                                {boardState.eventDayCollection[hashDate(dayOfWeek)].eventCollection.map((event, dayViewID) => (
                                     <Card
                                         event={event}
                                         key={`${rowViewID} + ${dayViewID}`}

@@ -13,9 +13,9 @@ export default function Row({
 }) {
     return (
         <div
+            data-date={dayOfWeek.toString()}
             className={`${styles.row} rowEvent`}
             style={{ height: `${rowHeight}px` }}
-            onMouseMoveCapture={eventHandlers.mouseMove}
             onMouseUp={eventHandlers.mouseUp}
         >
             {children}
