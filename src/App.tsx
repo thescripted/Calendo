@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import CalendarHeader from './components/CalendarHeader'
 import Row from './components/Row'
 import Card from './components/Card'
 import Modal from './components/Modal'
@@ -23,7 +24,7 @@ function getCursorPosition(event) {
 function getRelativePosition(coordinate: number): number {
     // currently unused. It will be more complicated when the calendar is placed into a scrollable container.
     const calendarRoot = document.getElementById('calendar_root')
-    const HARDCODED_ROOT_TOP_OFFSET = 20
+    const HARDCODED_ROOT_TOP_OFFSET = 84 
     const SCROLL_OFFSET = calendarRoot.scrollTop
     const relativeCoordinate = coordinate + SCROLL_OFFSET - HARDCODED_ROOT_TOP_OFFSET
     return relativeCoordinate
@@ -131,7 +132,7 @@ class BoardGenerator { // Maybe change this to a "function setup" or init instea
     private _generateDefaultDays(): ISearchDay {
         let result: ISearchDay = {}
         for (let i = 0; i < this._numRows; i++) {
-            const date = new Date(2020, 9, i) // 2020-10-01T05:00:00.000Z, 2020-10-02T05:00:00.000Z, ...
+            const date = new Date(2020, 9, i + 8) // 2020-10-01T05:00:00.000Z, 2020-10-02T05:00:00.000Z, ...
             const id = hashDate(date) // Hashed date for ID. Do not use after year 3244.
             result[id] = {
                 date: date,
@@ -155,7 +156,7 @@ class BoardGenerator { // Maybe change this to a "function setup" or init instea
     generateInitialWeek(): Date[] {
         let week: Date[] = []
         for (let i = 0; i < this._numRows; i++) {
-            week.push(new Date(2020, 9, i))
+            week.push(new Date(2020, 9, i + 8))
         }
         return week
     }
@@ -406,6 +407,7 @@ function App() {
         <>
             <div className='App'>
                 <DndProvider backend={HTML5Backend}>
+                    <CalendarHeader weekArray={weekArray}/>
                     <div id='calendar_root' className='container' onDragOver={containerDragOverHandler} onDropCapture={containerDragDropHandler}>
                         {weekArray.map((dayOfWeek, rowViewID) => (
                             <Row

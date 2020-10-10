@@ -1,0 +1,47 @@
+.container {
+    height: 64px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    padding: 8px 0;
+    box-sizing: border-box;
+    justify-content: space-between;
+    background-color: white;
+    border-bottom: 1px solid black;
+    padding-right: 17px; /* This is to offset the scroll. Will be removed */
+}
+
+
+.container p {
+    margin: 0;
+    padding: 0;
+}
+
+.item_container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-right: 1px solid lightgray;
+}
+
+
+.text_wrapper {
+    color: black;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.primary_text_wrapper {
+    font-weight: 600;
+    color: white;
+    background-color: burlywood;  
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
