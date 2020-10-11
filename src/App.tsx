@@ -4,6 +4,7 @@ import CalendarHeader from './components/CalendarHeader'
 import Row from './components/Row'
 import Card from './components/Card'
 import Modal from './components/Modal'
+import Sidebar from './components/Sidebar'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import produce from 'immer';
@@ -110,7 +111,7 @@ interface IModalInvoker {
 
 class BoardGenerator { // Maybe change this to a "function setup" or init instead.
     constructor(viewportHeight: number) {
-        this._numRows = 7
+        this._numRows = 5
         this._viewportHeight = viewportHeight
         this._heightIndex = this._generateHeightIndex(24, 2)
         this._defaultDayCollection = this._generateDefaultDays()
@@ -459,7 +460,9 @@ function App() {
     return (
         <>
             <div className='App'>
-                <DndProvider backend={HTML5Backend}>
+                    <div className="main_content">
+                    <Sidebar />
+                    <div className="calendar_content">
                     <CalendarHeader weekArray={weekArray}/>
                     <div id='calendar_root' className='container' onDragOver={containerDragOverHandler} onDropCapture={containerDragDropHandler}>
                         {weekArray.map((dayOfWeek, rowViewID) => (
@@ -485,7 +488,9 @@ function App() {
                             </Row>
                         ))}
                     </div>
-                </DndProvider>
+                    </div>
+                    </div>
+
             </div>
             { eventState.modal ? (
                 ReactDOM.createPortal(
