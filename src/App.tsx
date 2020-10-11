@@ -22,7 +22,7 @@ function getCursorPosition(event) {
  * @returns {number} Returns the coordinate relative to the calendar.
  */
 function getRelativePosition(xCoordinate: number, yCoordinate: number): number[] {
-    // currently unused. It will be more complicated when the calendar is placed into a scrollable container.
+    //TODO: Gather offset from this variable vvv
     const calendarRoot = document.getElementById('calendar_root')
     const HARDCODED_ROOT_TOP_OFFSET = 84 
     const LEFT_OFFSET = 136
@@ -62,6 +62,15 @@ interface IEvent {
     preview: boolean
 }
 
+interface IEventUpdateConfig {
+    Day?: IDay
+    date?: Date
+    startTime?: Date
+    endTime?: Date
+    content?: string
+    preview?: boolean
+}
+
 interface IDay {
     date: Date
     dayID: string
@@ -84,15 +93,6 @@ interface IBoard {
     eventDayCollection: ISearchDay
 }
 
-interface IEventUpdateConfig {
-    startTime?: Date
-    endTime?: Date
-    content?: string
-    date?: Date
-    Day?: IDay
-    preview?: boolean
-}
-
 interface IEventState {
     dragging: IEvent | undefined
     carrying: IEvent | undefined
@@ -110,7 +110,7 @@ interface IModalInvoker {
 
 class BoardGenerator { // Maybe change this to a "function setup" or init instead.
     constructor(viewportHeight: number) {
-        this._numRows = 5
+        this._numRows = 7
         this._viewportHeight = viewportHeight
         this._heightIndex = this._generateHeightIndex(24, 2)
         this._defaultDayCollection = this._generateDefaultDays()
@@ -183,16 +183,14 @@ const defaultModalInvoker: IModalInvoker = {
 
 function App() {
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState())
+    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek())
     const [eventState, setEventState] = React.useState<IEventState>(defaultEventState)
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
-    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek())
 
-    // useEffect for modal. only called when the appropriate caller was invoked.
-    // This is very stupid and sloppy. But I cannot attach callbacks to setState using functional components.
-    // And there are many ways the board state can be created/added.
-    // This effect only runs when the correct invoker generates a new card.
-    // The card location/information is stored in that invoker object and passed into the modal here.
-    // Sigh. ):
+    // useEffect for togglign the modal. 
+    // This relies on the cardollection being appropriately updated, but since this card
+    // collection can be updated by many different places, a modalInvoker is used to toggle
+    // the modal along with an updated Boardstate.
     React.useEffect( () => {
         if (modalInvoker.invoked) {
             emitModal(getEvent(modalInvoker.eventID), modalInvoker.locator)
@@ -206,11 +204,17 @@ function App() {
     function getDay(dayID: string): IDay | undefined {
         return boardState.eventDayCollection[dayID]
     }
-    function validate(eventID: string, stagedState: IBoard): void {
-        return
-    }
 
-    function setModal(value: boolean) { // Wrapper for setEventState
+    // TODO: Validate will determine if the event location is validated. If the card
+    // is in a "preview" state, then no validation checks are needed.
+    function validate(event: IEvent, stagedState: IBoard): void {
+        const { preview, startTime, endTime, date } = event
+        if (preview) {
+            return
+        }
+    }
+    // Wrapper for setEventState. This is passed to the modal view.
+    function setModal(value: boolean) { 
         setEventState({...eventState, modal: value, modalEvent: undefined })
         setModalInvoker(defaultModalInvoker)
     }
@@ -232,7 +236,7 @@ function App() {
             draftState.eventDayCollection[options.Day.dayID].eventCollection.push(eventDraft)
         })
 
-        validate(eventID, nextState)
+        validate(eventDraft, nextState)
         setBoardState(nextState)
         return eventID
     }
@@ -268,10 +272,11 @@ function App() {
 
             draftState.eventDayCollection[event.Day.dayID].eventCollection = oldEventArray
         })
-        validate(event.eventID, nextState)
+        validate(event, nextState)
         setBoardState(nextState)
     }
 
+    // TODO: Make use of this. Can be used in validation or by user request.
     function deleteEvent(event: IEvent): void {
         const nextState: IBoard = produce(boardState, draftState => {
             delete draftState.cardCollection[event.eventID]
@@ -285,7 +290,7 @@ function App() {
             })
             draftState.eventDayCollection[event.Day.dayID].eventCollection = eventArray
         })
-        validate(event.eventID, nextState)
+        validate(event, nextState)
         setBoardState(nextState)
     }
 
@@ -357,7 +362,7 @@ function App() {
         }
     }
 
-    function carryCardOver(yCoord: number, date: string, preview=true) {
+    function carryCardOver(date: string, yCoord: number, preview=true) {
         if (eventState.isCarrying === false) {
             return
         }
@@ -390,50 +395,13 @@ function App() {
         // setEventState({...eventState, dragging: card, isDragging: true})
     }
 
-    function containerDragOverHandler(ev) {
-        ev.persist()
-        ev.preventDefault()
-        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
-        if (eventState.isDragging) {
-            expandCardDown(eventState.dragging, ev.pageY)
-        } else if (eventState.isCarrying) {
-            carryCardOver(ev.pageY, ev.target.dataset.date)
-        }
-    }
-
-    function containerDragDropHandler(ev) {
-        ev.preventDefault()
-        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
-        if (eventState.isDragging) {
-            expandCardDown(eventState.dragging, ev.pageY, false)
-        } else if (eventState.isCarrying) {
-            carryCardOver(ev.pageY, ev.target.dataset.date, false)
-        }
-
-        setEventState({
-            ...eventState,
-            dragging: undefined,
-            isDragging: false,
-            carrying: undefined,
-            isCarrying: false
-        })
-    }
-
-    // The threshold for a card event is a little complicated.
-    // There should be a minimum and maximum threshold, and 
-    // a percentile of the cardheight in-between.
-    // For now this will just return a number.
-    function getThreshold(height: number): number {
-        return Math.max(12, height*0.1)
-    }
-
     function cardDragStartHandler(cardEvent: IEvent, ev) {
         ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
         const clientHeight = ev.currentTarget.clientHeight
         const offsetThreshold = getThreshold(clientHeight)
         console.log(`Offset: ${ev.nativeEvent.offsetY}, ClientHeight: ${clientHeight}, threshold: ${clientHeight- offsetThreshold}`)
 
-        // If we're near the bottom of the card, expand it. Otherwise, carry it.
+        // To Determine if the card should be "carried" or "dragged" depends on the user click location.
         if (ev.nativeEvent.offsetY > clientHeight - offsetThreshold) {
             setEventState({
                 ...eventState,
@@ -447,6 +415,45 @@ function App() {
                 isCarrying: true
             })
         }
+    }
+
+    function containerDragOverHandler(ev) {
+        ev.persist()
+        ev.preventDefault()
+        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
+        if (eventState.isDragging) {
+            expandCardDown(eventState.dragging, ev.pageY)
+        } else if (eventState.isCarrying) {
+            carryCardOver(ev.target.dataset.date, ev.pageY)
+        }
+    }
+
+    function containerDragDropHandler(ev) {
+        ev.preventDefault()
+        ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
+        if (eventState.isDragging) {
+            expandCardDown(eventState.dragging, ev.pageY, false)
+        } else if (eventState.isCarrying) {
+            carryCardOver(ev.target.dataset.date, ev.pageY, false)
+        }
+
+        // onDrop, remove all drag/carry events.
+        setEventState({
+            ...eventState,
+            dragging: undefined,
+            isDragging: false,
+            carrying: undefined,
+            isCarrying: false
+        })
+    }
+
+    // The threshold for a card event is a little complicated.
+    // There should be a minimum and maximum threshold, and 
+    // a percentile of the cardheight in-between.
+    // For now this will just return a number.
+    // Also, this should probably be moved into a different file.
+    function getThreshold(height: number): number {
+        return Math.max(12, height*0.1)
     }
 
     return (
