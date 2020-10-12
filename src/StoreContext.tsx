@@ -1,14 +1,5 @@
 import React from 'react'
-
-const StoreContext = React.createContext()
-
-function useBoard() {
-    const context = React.useContext(StoreContext)
-    if (!context) {
-        throw new Error(`useCount must be used within a BoardProvider`)
-    }
-    return context
-}
+import { IHeightIndex, IBoard } from '../src/types/calendo'
 
 class BoardGenerator {
     constructor(viewportHeight: number) {
@@ -52,11 +43,23 @@ class BoardGenerator {
 
 const Board = new BoardGenerator(ROW_HEIGHT)
 
+
+const StoreContext = React.createContext(undefined)
+
+function useBoard() {
+    const context = React.useContext(StoreContext)
+    if (!context) {
+        throw new Error(`useCount must be used within a BoardProvider`)
+    }
+    return context
+}
+
 function BoardProvider(props) {
+    const [boardState, setBoardState] = React.useState(0)
 
     const value = React.useMemo(function() {
-        return [boardState, setBoardState], [boardState]
-    })
+        return [boardState, setBoardState] [boardState]
+    }, [])
     return <StoreContext.Provider value={value} {...props} />
 }
 
