@@ -1,0 +1,57 @@
+.container {
+    border: 1px solid lightgray;
+    width: 20%;
+}
+
+.container * {
+    font-weight: 300;
+}
+
+.container h2 {
+    font-size: 36px;
+}
+
+.main_content {
+    padding: 12px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.creation_area {
+    height: 100%;
+    text-align: center;
+}
+
+.clock { 
+    margin-top: 10px;
+    padding: 2px 0;
+    font-size: 48px;
+}
+
+.create_event {
+    margin-top: 16px;
+    width: 100%;
+}
+
+.create_event button {
+    border-radius: 122px;
+    border: none;
+    padding: 12px 20px;
+    margin: auto;
+    font-size: 16px;
+}
+
+.copyright {
+    height: 100%;
+}
+
+.copyright * {
+    margin-top: 12px;
+}
+
+.copyright a {
+    font-weight: 600
+}

@@ -16,13 +16,15 @@ export default function(props) {
                 </div>
                 <div className={styles.copyright}>
                     <p>
-                        Calendo is inspired by Google Calendar, utilizing React with TypeScript to create
-                        (___Insert general application here___). 
+                        Calendo is an event-driven, TypeScript application demonstrating some of the core features of
+                        Google Calendar.
                     </p>
                     <p>Created by 
-                        <a>Benjamin Kinga</a>
+                        <a> Benjamin Kinga</a>
                     </p>
-                    <a>Source Code</a>
+                    <p>
+                        <a>Source Code</a>
+                    </p>
                 </div>
             </div>
         </div>
