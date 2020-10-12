@@ -47,4 +47,14 @@ export interface IEventState {
     dragging: IEvent | undefined
     carrying: IEvent | undefined
     modal: boolean
+    isDragging: boolean
+    isCarrying: boolean
+    modalEvent: IEvent | undefined
 }
+
+export interface IModalInvoker {
+    invoked: boolean
+    eventID: string
+    locator: number
+}
+

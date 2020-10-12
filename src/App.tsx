@@ -5,17 +5,10 @@ import Row from './components/Row'
 import Card from './components/Card'
 import Modal from './components/Modal'
 import Sidebar from './components/Sidebar'
-import produce from 'immer';
-import { ROW_HEIGHT } from './support/Constant'
-import { hashDate } from './support'
-import { v4 as uuidv4 } from 'uuid'
+import { hashDate, useEvent, getThreshold, getEvent, getDay } from './support'
 import * as dateFns from 'date-fns'
-import { useBoard } from './StoreContext'
-
-
-function getCursorPosition(event) {
-    return [event.pageX, event.pageY]
-}
+import { useBoard, useBoardAPI } from './StoreContext'
+import { IEvent, IEventUpdateConfig, IDay, IModalInvoker } from './types/calendo'
 
 /**
  * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
@@ -33,6 +26,20 @@ function getRelativePosition(xCoordinate: number, yCoordinate: number): number[]
     return [relativeXCoordinate, relativeYCoordinate]
 }
 
+/**
+ * Given an array of coordinates, and a cursor position, this will return the index
+ * of the nearest slot.
+ * Example:
+ * rawCoordinate = 130
+ * slots = [0, 50, 100, 150, 200, 250]
+ *
+ * Returns:
+ * 150
+ *
+ * @param {number} rawCoordinate
+ * @param {number[]} slots
+ * @return {number}
+ */
 function getNearestSlot(rawCoordinate: number, slots: number[]): number {
     let minVal = Number.MAX_SAFE_INTEGER;
     let coord = -1;
@@ -45,121 +52,10 @@ function getNearestSlot(rawCoordinate: number, slots: number[]): number {
     });
     return coord
 }
+
 // Hack to get blank image for dragEvents
 const invisibleImage = document.createElement('img');
 invisibleImage.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-
-interface IHeightIndex extends Array<number> {
-    [index: number]: number
-}
-
-interface IEvent {
-    eventID: string
-    Day: IDay
-    date: Date
-    startTime: Date
-    endTime: Date
-    content: string
-    preview: boolean
-}
-
-interface IEventUpdateConfig {
-    Day?: IDay
-    date?: Date
-    startTime?: Date
-    endTime?: Date
-    content?: string
-    preview?: boolean
-}
-
-interface IDay {
-    date: Date
-    dayID: string
-    eventCollection: IEvent[]
-}
-
-interface ISearchEvent {
-    [eventID: string]: IEvent
-}
-
-interface ISearchDay {
-    [dayID: string]: IDay
-}
-
-interface IBoard {
-    numRows: number // Will be removed soon...
-    viewportHeight: number
-    heightIndex: IHeightIndex // Should probably not be state-dependent. 
-    cardCollection: ISearchEvent
-    eventDayCollection: ISearchDay
-}
-
-interface IEventState {
-    dragging: IEvent | undefined
-    carrying: IEvent | undefined
-    modal: boolean
-    isDragging: boolean
-    isCarrying: boolean
-    modalEvent: IEvent | undefined
-}
-
-interface IModalInvoker {
-    invoked: boolean
-    eventID: string
-    locator: number
-}
-
-class BoardGenerator { // Maybe change this to a "function setup" or init instead.
-    constructor(viewportHeight: number) {
-        this._numRows = 7
-        this._viewportHeight = viewportHeight
-        this._heightIndex = this._generateHeightIndex(24, 2)
-
-    }
-
-    private _viewportHeight: number
-    private _numRows: number
-    private _heightIndex: IHeightIndex
-    private _defaultDayCollection: ISearchDay
-
-    private _generateHeightIndex(hour, subdivision): IHeightIndex {
-        const HourToViewScale = this._viewportHeight / (hour * subdivision)
-        const Offset = HourToViewScale / 2
-        let hourArray = Array.from({ length: hour * subdivision }).map(function (_, idx) {
-            return HourToViewScale * idx + Offset
-        })
-        return hourArray
-    }
-
-    generateInitialBoardState(): IBoard {
-        return {
-            numRows: this._numRows,
-            viewportHeight: this._viewportHeight,
-            heightIndex: this._heightIndex,
-            cardCollection: {},
-            eventDayCollection: {}
-        }
-    }
-
-    generateInitialWeek(): Date[] {
-        let week: Date[] = []
-        for (let i = 0; i < this._numRows; i++) {
-            week.push(new Date(2020, 9, i + 8))
-        }
-        return week
-    }
-}
-
-const Board = new BoardGenerator(ROW_HEIGHT)
-
-const defaultEventState = {
-    dragging: undefined,
-    carrying: undefined,
-    modal: false,
-    isDragging: false,
-    isCarrying: false,
-    modalEvent: undefined
-}
 
 const defaultModalInvoker: IModalInvoker = {
     invoked: false,
@@ -168,14 +64,12 @@ const defaultModalInvoker: IModalInvoker = {
 }
 
 function App() {
-    const [boardState, setBoardState] = useBoard()
-    const [IoardState, IetBoardState] = React.useState<IBoard>(Board.generateInitialBoardState())
+    const {boardState, setBoardState, Board} = useBoard()
+    const {eventState, setEventState} = useEvent()
+    const {generateEvent, updateEvent, deleteEvent} = useBoardAPI({eventState, setEventState})
+
     const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek())
-    const [eventState, setEventState] = React.useState<IEventState>(defaultEventState)
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
-
-    console.log(boardState)
-
     // Side effect of updating the day of week will produce a new Day collection if it does not exists already.
     React.useEffect(() => {
         let updatedState = {
@@ -183,7 +77,6 @@ function App() {
         } 
         weekArray.forEach(dayOfWeek => {
             if (boardState.eventDayCollection[hashDate(dayOfWeek)] === undefined) {
-                console.log(dayOfWeek)
                 // produce new board state
                 const id = hashDate(dayOfWeek)
                 updatedState.eventDayCollection[id] = {
@@ -195,9 +88,8 @@ function App() {
             }
         })
     }, [weekArray])
-    console.log(boardState)
 
-    // useEffect for togglign the modal. 
+    // useEffect for toggling the modal. 
     // This relies on the cardollection being appropriately updated, but since this card
     // collection can be updated by many different places, a modalInvoker is used to toggle
     // the modal along with an updated Boardstate.
@@ -207,112 +99,24 @@ function App() {
         }
     }, [boardState.cardCollection, modalInvoker])
 
-    function getEvent(eventID: string): IEvent | undefined {
-        return boardState.cardCollection[eventID]
-    }
-
-    function getDay(dayID: string): IDay | undefined {
-        return boardState.eventDayCollection[dayID]
-    }
-
-    // TODO: Validate will determine if the event location is validated. If the card
-    // is in a "preview" state, then no validation checks are needed.
-    function validate(event: IEvent, stagedState: IBoard): void {
-        const { preview, startTime, endTime, date } = event
-        if (preview) {
-            return
-        }
-    }
     // Wrapper for setEventState. This is passed to the modal view.
     function setModal(value: boolean) {
         setEventState({ ...eventState, modal: value, modalEvent: undefined })
         setModalInvoker(defaultModalInvoker)
     }
 
-    function generateEvent(options: IEventUpdateConfig): string {
-        const eventID = uuidv4()
-        const eventDraft: IEvent = {
-            eventID: eventID,
-            date: options.date,
-            Day: options.Day,
-            startTime: options.startTime,
-            endTime: options.endTime,
-            content: options.content,
-            preview: options.preview,
-        }
-
-        const nextState: IBoard = produce(boardState, draftState => {
-            draftState.cardCollection[eventID] = eventDraft
-            draftState.eventDayCollection[options.Day.dayID].eventCollection.push(eventDraft)
-        })
-
-        validate(eventDraft, nextState)
-        setBoardState(nextState)
-        return eventID
-    }
-
-    function updateEvent(event: IEvent, options: IEventUpdateConfig): void {
-        const nextState: IBoard = produce(boardState, draftState => {
-            const cardItem = draftState.cardCollection[event.eventID]
-            draftState.cardCollection[event.eventID] = { ...cardItem, ...options }
-
-            // Event has moved to a different date.
-            let oldEventArray: IEvent[]
-            if (options.date && event.date.valueOf() !== options.date.valueOf()) {
-                oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.filter(singleEvent => {
-                    if (singleEvent.eventID !== event.eventID) {
-                        return singleEvent
-                    }
-                })
-                draftState.eventDayCollection[options.Day.dayID].eventCollection.push({ ...cardItem, ...options })
-                // Since this condition only apply when we are "carrying a card", update that carrying object state.
-                const nextCarryingState = produce(eventState, draftState => {
-                    draftState.carrying = { ...draftState.carrying, ...options }
-                })
-                setEventState(nextCarryingState)
-
-            } else {
-                oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
-                    if (singleEvent.eventID === event.eventID) {
-                        return { ...cardItem, ...options }
-                    }
-                    return singleEvent
-                })
-            }
-
-            draftState.eventDayCollection[event.Day.dayID].eventCollection = oldEventArray
-        })
-        validate(event, nextState)
-        setBoardState(nextState)
-    }
-
-    // TODO: Make use of this. Can be used in validation or by user request.
-    function deleteEvent(event: IEvent): void {
-        const nextState: IBoard = produce(boardState, draftState => {
-            delete draftState.cardCollection[event.eventID]
-            const eventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
-                if (singleEvent.eventID === event.eventID) {
-                    return undefined
-                }
-                return singleEvent
-            }).filter(singleEvent => {
-                return (singleEvent !== undefined)
-            })
-            draftState.eventDayCollection[event.Day.dayID].eventCollection = eventArray
-        })
-        validate(event, nextState)
-        setBoardState(nextState)
-    }
-
-
     function emitModal(event: IEvent, location: any): void {
         setEventState({ ...eventState, modal: true, modalEvent: event })
     }
 
-
     function finalizeCardMovement(cardEvent: IEvent) {
         updateEvent(cardEvent, { preview: false })
         setEventState({ ...eventState, dragging: undefined, isDragging: false })
+    }
+
+    // needs a better name. Basically, this checks if the event target is not a card
+    function isTargetEmpty(event) {
+        return Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)
     }
 
     function expandCardDown(event: IEvent, pageYCoordinate: number, preview = true) {
@@ -323,11 +127,6 @@ function App() {
             minutes: 30 * slotIndex
         })
         updateEvent(event, { endTime: updatedEndTime, preview: preview }) // Triggers an event update
-    }
-
-    // needs a better name. Basically, this checks if the event target is not a card
-    function isTargetEmpty(event) {
-        return Array.from(document.querySelectorAll('.rowEvent')).includes(event.target)
     }
 
     // Creates a preview event.
@@ -358,7 +157,7 @@ function App() {
 
     function rowMouseUpHandler(dayOfWeek: Date, event) {
         event.persist();
-        const [_, yCoord] = getCursorPosition(event)
+        const yCoord = event.pageY
         if (eventState.isDragging) {
             finalizeCardMovement(eventState.dragging)
             return
@@ -456,17 +255,6 @@ function App() {
             isCarrying: false
         })
     }
-
-    // The threshold for a card event is a little complicated.
-    // There should be a minimum and maximum threshold, and 
-    // a percentile of the cardheight in-between.
-    // For now this will just return a number.
-    // Also, this should probably be moved into a different file.
-    function getThreshold(height: number): number {
-        return Math.max(12, height * 0.1)
-    }
-
-
 
     return (
         <>
