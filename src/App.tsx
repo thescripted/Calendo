@@ -5,7 +5,7 @@ import Row from './components/Row'
 import Card from './components/Card'
 import Modal from './components/Modal'
 import Sidebar from './components/Sidebar'
-import { hashDate, useEvent, getThreshold, getEvent, getDay } from './support'
+import { hashDate, useEvent, getThreshold, locateEvent, locateDay } from './support'
 import * as dateFns from 'date-fns'
 import { useBoard, useBoardAPI } from './StoreContext'
 import { IEvent, IEventUpdateConfig, IDay, IModalInvoker } from './types/calendo'
@@ -95,7 +95,7 @@ function App() {
     // the modal along with an updated Boardstate.
     React.useEffect(() => {
         if (modalInvoker.invoked) {
-            emitModal(getEvent(modalInvoker.eventID), modalInvoker.locator)
+            emitModal(locateEvent(modalInvoker.eventID, boardState), modalInvoker.locator)
         }
     }, [boardState.cardCollection, modalInvoker])
 
@@ -187,7 +187,7 @@ function App() {
             eventDate = new Date(date)
         }
 
-        const eventDay = getDay(hashDate(eventDate))
+        const eventDay = locateDay(eventDate, boardState)
         const secondsToAdd = (dateFns.getTime(event.endTime) - dateFns.getTime(event.startTime)) / 1000
 
         const updatedStartTime = dateFns.add(eventDate, {

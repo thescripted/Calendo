@@ -3,15 +3,18 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import Navigation from './components/Navigation'
-import {BoardProvider, useBoard} from './StoreContext.tsx'
+import {BoardProvider}  from './StoreContext.tsx'
+import {WeekProvider} from './TimeContext.tsx'
 
 
 
 ReactDOM.render(
     <React.StrictMode>
         <BoardProvider>
-            <Navigation />
-            <App />
+            <WeekProvider>
+                <Navigation />
+                <App />
+            </WeekProvider>
         </BoardProvider>
     </React.StrictMode>,
     document.getElementById('root')

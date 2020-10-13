@@ -1,8 +1,7 @@
 import React from 'react'
-import { IEventState, IDay, IEvent } from '../types/calendo'
-import { StoreContext } from '../StoreContext'
+import { IEventState, IDay, IEvent, IBoard } from '../types/calendo'
 
-export function hashDate(date) {
+export function hashDate(date: Date) {
     return (+date).toString(36);
 }
 
@@ -22,21 +21,11 @@ export function useEvent() {
 export function getThreshold(height: number): number {
         return Math.max(12, height * 0.1)
     }
-export function getEvent(eventID: string): IEvent | undefined {
-    const context = React.useContext(StoreContext)
-    if (!context) {
-        throw new Error("getEvent can only be used within StoreContext")
-    }
-    const {boardState} = context
-    return boardState.cardCollection[eventID]
+export function locateEvent(eventID: string, context: IBoard): IEvent | undefined {
+    return context.cardCollection[eventID]
 }
 
-export function getDay(dayID: string): IDay | undefined {
-    const context = React.useContext(StoreContext)
-    if (!context) {
-        throw new Error("getEvent can only be used within StoreContext")
-    }
-    const {boardState} = context
-    return boardState.eventDayCollection[dayID]
+export function locateDay(date: Date, context: IBoard): IDay | undefined {
+    return context.eventDayCollection[hashDate(date)]
 }
 
