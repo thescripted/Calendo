@@ -7,8 +7,9 @@ import Modal from './components/Modal'
 import Sidebar from './components/Sidebar'
 import { hashDate, useEvent, getThreshold, locateEvent, locateDay } from './support'
 import * as dateFns from 'date-fns'
-import { useBoard, useBoardAPI } from './StoreContext'
 import { IEvent, IEventUpdateConfig, IDay, IModalInvoker } from './types/calendo'
+import { useWeek } from './TimeContext'
+import { useBoard, useBoardAPI } from './StoreContext'
 
 /**
  * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
@@ -17,12 +18,14 @@ import { IEvent, IEventUpdateConfig, IDay, IModalInvoker } from './types/calendo
  */
 function getRelativePosition(xCoordinate: number, yCoordinate: number): number[] {
     //TODO: Gather offset from this variable vvv
+    
     const calendarRoot = document.getElementById('calendar_root')
-    const HARDCODED_ROOT_TOP_OFFSET = 84
-    const LEFT_OFFSET = 136
+    const LEFT_OFFSET = calendarRoot.offsetLeft 
+    const TOP_OFFSET = calendarRoot.offsetTop 
     const SCROLL_OFFSET = calendarRoot.scrollTop
+
     const relativeXCoordinate = xCoordinate - LEFT_OFFSET
-    const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - HARDCODED_ROOT_TOP_OFFSET
+    const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - TOP_OFFSET
     return [relativeXCoordinate, relativeYCoordinate]
 }
 
@@ -64,31 +67,11 @@ const defaultModalInvoker: IModalInvoker = {
 }
 
 function App() {
-    const {boardState, setBoardState, Board} = useBoard()
+    const {boardState} = useBoard()
+    const {weekArray} = useWeek()
     const {eventState, setEventState} = useEvent()
     const {generateEvent, updateEvent, deleteEvent} = useBoardAPI({eventState, setEventState})
-
-    const [weekArray, setWeekArray] = React.useState<Date[]>(Board.generateInitialWeek())
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
-    // Side effect of updating the day of week will produce a new Day collection if it does not exists already.
-    React.useEffect(() => {
-        let updatedState = {
-            eventDayCollection: {}
-        } 
-        weekArray.forEach(dayOfWeek => {
-            if (boardState.eventDayCollection[hashDate(dayOfWeek)] === undefined) {
-                // produce new board state
-                const id = hashDate(dayOfWeek)
-                updatedState.eventDayCollection[id] = {
-                    date: dayOfWeek,
-                    dayID: id,
-                    eventCollection: []
-                }
-                setBoardState({...boardState, ...updatedState})
-            }
-        })
-    }, [weekArray])
-
     // useEffect for toggling the modal. 
     // This relies on the cardollection being appropriately updated, but since this card
     // collection can be updated by many different places, a modalInvoker is used to toggle
@@ -286,6 +269,7 @@ function App() {
                                     ))}
                                 </Row>
                             ))}
+                        <CalendarTime />
                         </div>
                     </div>
                 </div>
@@ -298,6 +282,18 @@ function App() {
                 )) : undefined}
         </>
     );
+}
+
+function CalendarTime (props) {
+    return (
+        <div className="svg_root">
+            <svg width="600" height="900" viewBox="0 0 1200 1800">
+                <line x1="0" y1="100" x2="600" y2="100" style={{stroke:"rgb(255,0,0)", strokeWidth:"1"}}/>
+                <line x1="0" y1="200" x2="600" y2="200" style={{stroke:"rgb(255,0,0)", strokeWidth:"1"}}/>
+            </svg>
+        </div>
+    )
+
 }
 
 export default App;

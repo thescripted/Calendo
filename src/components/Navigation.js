@@ -1,7 +1,10 @@
 import React from 'react'
+import {useWeek} from '../TimeContext'
 import styles from "./styles/Navigation.module.css"
 
 export default function Navigation(props) {
+    const { incrementDays, decrementDays } = useWeek()
+
     return(
         <div className={styles.container}>
             <div className={styles.navigation_wrapper}>
@@ -10,8 +13,8 @@ export default function Navigation(props) {
                 </div>
                 <div className={styles.row_nav}>
                     <div className={styles.button_container}>
-                        <button id={styles.left_button}/>
-                        <button id={styles.right_button}/>
+                        <button id={styles.left_button} onClick={() => decrementDays()} />
+                            <button id={styles.right_button} onClick={() => incrementDays()} />
                     </div>
                     <div className={styles.month_field}>
                         <h2>

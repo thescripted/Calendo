@@ -28,6 +28,8 @@ p, h1, h2 {
 }
 
 .container {
+    background-color: transparent;
+    position: relative;
     display: flex;
     flex-direction: row;
     border-radius: 3px;
@@ -41,9 +43,20 @@ p, h1, h2 {
     flex-direction: row;
 }
 
+.calendar_root {
+    position: relative
+}
+
 .calendar_content {
     width: 80%;
     border: 1px solid lightgray;
+}
+
+.svg_root {
+    z-index: -4;
+    position: absolute;
+    left: 0;
+    top: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {

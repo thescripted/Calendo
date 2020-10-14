@@ -35,13 +35,6 @@ class BoardGenerator {
         }
     }
 
-    generateInitialWeek(): Date[] {
-        let week: Date[] = []
-        for (let i = 0; i < this._numRows; i++) {
-            week.push(new Date(2020, 9, i + 8))
-        }
-        return week
-    }
 }
 
 const StoreContext = React.createContext(undefined)
@@ -145,12 +138,11 @@ function useBoard() {
         throw new Error(`useBoard must be used within a BoardProvider`)
     }
 
-    const {boardState, setBoardState, Board} = context
+    const {boardState, setBoardState} = context
 
     return {
         boardState,
-        setBoardState,
-        Board
+        setBoardState
     }
 }
 
