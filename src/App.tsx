@@ -72,6 +72,7 @@ function App() {
     const {eventState, setEventState} = useEvent()
     const {generateEvent, updateEvent, deleteEvent} = useBoardAPI({eventState, setEventState})
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
+ 
     // useEffect for toggling the modal. 
     // This relies on the cardollection being appropriately updated, but since this card
     // collection can be updated by many different places, a modalInvoker is used to toggle
@@ -82,7 +83,7 @@ function App() {
         }
     }, [boardState.cardCollection, modalInvoker])
 
-    // Wrapper for setEventState. This is passed to the modal view.
+    // Wrapper for setEventState. This is passed to the modal view to only update the modalState.
     function setModal(value: boolean) {
         setEventState({ ...eventState, modal: value, modalEvent: undefined })
         setModalInvoker(defaultModalInvoker)
