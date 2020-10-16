@@ -286,15 +286,34 @@ function App() {
 }
 
 function CalendarTime (props) {
+    const svgRoot = document.getElementById('svg_root')
+    const height = 900 
+    const initialOffset = height / 24;
+    const timeArray = Array.from({length: 23}).map((_, idx) => {
+        return height * (idx/24) + initialOffset
+    })
+
+    console.dir(svgRoot)
+
+    function formattedHour(hour: number): string {
+        return dateFns.format(new Date(1997, 4, 20, hour), 'h aaaa')
+
+    }
     return (
-        <div className="svg_root">
-            <svg width="600" height="900" viewBox="0 0 1200 1800">
-                <line x1="0" y1="100" x2="600" y2="100" style={{stroke:"rgb(255,0,0)", strokeWidth:"1"}}/>
-                <line x1="0" y1="200" x2="600" y2="200" style={{stroke:"rgb(255,0,0)", strokeWidth:"1"}}/>
-            </svg>
+        <div id="svg_root" className="svg_root">
+            {svgRoot && <svg viewBox={`0 0 ${svgRoot.offsetWidth * 2} ${height * 2}`}>
+                {timeArray.map((time, idx) => (
+                    <>
+                        <text x="10" y={time * 2} style={{fontSize: '24px'}}>{formattedHour(idx + 1 )}</text>
+                        <line key={time} x1="0" y1={time * 2} x2={svgRoot.offsetWidth * 2} y2={time * 2} style={{stroke: "rgb(140, 140, 140)", strokeWidth: "1"}}/>
+                    </>
+                ))}
+            </svg>}
         </div>
     )
 
 }
+
+
 
 export default App;

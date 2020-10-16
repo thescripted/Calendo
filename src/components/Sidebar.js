@@ -1,14 +1,17 @@
 import React from 'react'
 import styles from './styles/Sidebar.module.css'
+import * as dateFns from 'date-fns'
 
 export default function(props) {
+    const time = useFormattedTime()
+    console.log(time)
     return (
         <div className={styles.container}>
             <div className={styles.main_content}>
                 <div className={styles.creation_area}>
                     <h2>Current Time</h2>
                     <div className={styles.clock}>
-                        <span>07</span>:<span>22</span>:<span>30</span>
+                        {time}
                     </div>
                     <div className={styles.create_event}>
                         <button>Create An Event</button>
@@ -29,4 +32,21 @@ export default function(props) {
             </div>
         </div>
     )
+}
+
+// Hook to update the time every second. Since time-drift can happen with "setInterval", 
+// or if the user is on another tab, this hook is fired every 500ms and generates a new Date object
+// with the current time to render.
+function useFormattedTime() {
+    const [time, setTime] = React.useState(undefined)
+    React.useEffect(() => {
+        const timeInterval = setInterval(function() {
+            const formattedDate = dateFns.format(new Date(), 'hh:mm:ss a')
+            setTime(formattedDate)
+        })
+        return () => clearInterval(timeInterval)
+
+    }, [])
+
+    return time
 }
