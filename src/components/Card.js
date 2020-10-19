@@ -11,6 +11,7 @@ export default function Card({ event, eventHandlers, ...props }) {
 
     return (
         <div
+            data-eventid={event.eventID}
             draggable="true"
             onDragStart={eventHandlers.dragStart}
             className={styles.card}

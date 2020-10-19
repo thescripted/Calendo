@@ -56,5 +56,6 @@ export interface IModalInvoker {
     invoked: boolean
     eventID: string
     locator: number
+    pivot: boolean
 }
 

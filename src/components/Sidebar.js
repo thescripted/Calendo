@@ -3,8 +3,8 @@ import styles from './styles/Sidebar.module.css'
 import * as dateFns from 'date-fns'
 
 export default function(props) {
+    // This function will have to emit a modal on the calendarview. 
     const time = useFormattedTime()
-    console.log(time)
     return (
         <div className={styles.container}>
             <div className={styles.main_content}>
@@ -14,7 +14,7 @@ export default function(props) {
                         {time}
                     </div>
                     <div className={styles.create_event}>
-                        <button>Create An Event</button>
+                        <button onClick={() => props.createEventWithCurrentTime(new Date(2020, 9, 15))}>Create An Event</button>
                     </div>
                 </div>
                 <div className={styles.copyright}>

@@ -5,7 +5,7 @@ import Row from './components/Row'
 import Card from './components/Card'
 import Modal from './components/Modal'
 import Sidebar from './components/Sidebar'
-import { hashDate, useEvent, getThreshold, locateEvent, locateDay } from './support'
+import { hashDate, useEvent, getThreshold, locateEvent, locateDay, getCalendarInfo } from './support'
 import * as dateFns from 'date-fns'
 import { IEvent, IEventUpdateConfig, IDay, IModalInvoker } from './types/calendo'
 import { useWeek } from './TimeContext'
@@ -17,13 +17,7 @@ import { useBoard, useBoardAPI } from './StoreContext'
  * @returns {number} Returns the coordinate relative to the calendar.
  */
 function getRelativePosition(xCoordinate: number, yCoordinate: number): number[] {
-    //TODO: Gather offset from this variable vvv
-    
-    const calendarRoot = document.getElementById('calendar_root')
-    const LEFT_OFFSET = calendarRoot.offsetLeft 
-    const TOP_OFFSET = calendarRoot.offsetTop 
-    const SCROLL_OFFSET = calendarRoot.scrollTop
-
+    const { LEFT_OFFSET, TOP_OFFSET, SCROLL_OFFSET } = getCalendarInfo()
     const relativeXCoordinate = xCoordinate - LEFT_OFFSET
     const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - TOP_OFFSET
     return [relativeXCoordinate, relativeYCoordinate]
@@ -63,7 +57,8 @@ invisibleImage.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAAB
 const defaultModalInvoker: IModalInvoker = {
     invoked: false,
     eventID: "",
-    locator: -1
+    locator: -1,
+    pivot: false
 }
 
 function App() {
@@ -113,13 +108,22 @@ function App() {
         updateEvent(event, { endTime: updatedEndTime, preview: preview }) // Triggers an event update
     }
 
-    // Creates a preview event.
-    function createPreviewEvent(date: Date, yCoordinate: number): void {
+    // Creates a preview event and invokes the modal.
+    // The modal should not be invoked here, ideally. This needs to be split.
+    function createPreviewEvent(date: Date, yCoordinate: number, modalIdx: number): void {
+        let startTime: Date
+        if (yCoordinate > 0) {
         const [_, yPosition] = getRelativePosition(0, yCoordinate)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
-        const startTime = dateFns.add(date, {
+
+        startTime = dateFns.add(date, {
             minutes: 30 * slotIndex
         })
+        } else {
+            // generate default startTime based on currentTime.
+            const initialDate = new Date()
+            startTime = initialDate // will be scoped to nearest Time.
+        }
         const defaultEndTime = dateFns.add(startTime, {
             minutes: 60 // 1 Hour by default.
         })
@@ -132,10 +136,36 @@ function App() {
             preview: true
         }
         const eventID = generateEvent(eventConfig)
+
+        // Modal index is determined via closure. This function may move somewhere else so beware.
+        function calculateModalLocation() {
+            // 1. Position the modal relative to the calendar Root.
+            const { LEFT_OFFSET, WIDTH } = getCalendarInfo()
+
+            // 2. Determine how many days are present in the view and subdivide.
+            const ROWS = weekArray.length
+            const SUBDIVISION = WIDTH / ROWS
+            const PADDING = 12
+
+            // 3. Compute
+            let locator: number, pivot: boolean
+            if (modalIdx < Math.floor(ROWS / 2)) {
+                pivot = false 
+                locator = LEFT_OFFSET + SUBDIVISION*(+modalIdx + 1) + PADDING
+            } else {
+                pivot = true 
+                locator = LEFT_OFFSET + SUBDIVISION*(+modalIdx) - PADDING
+            }
+
+            // 4. Return the pixel value to be consumed in the modalInvoker.
+            return {locator, pivot} 
+        }
+        const { locator, pivot } = calculateModalLocation()
         setModalInvoker({
             invoked: true,
             eventID: eventID,
-            locator: 0
+            locator: locator,
+            pivot: pivot
         })
     }
 
@@ -147,11 +177,8 @@ function App() {
             return
         }
         if (isTargetEmpty(event)) { // Creating a new Card only happens if a card isn't already there.
-            const modalLocation = {
-                x: 0,
-                y: 0
-            }
-            createPreviewEvent(dayOfWeek, yCoord)
+            const dataIndex = event.currentTarget.dataset.idx
+            createPreviewEvent(dayOfWeek, yCoord, dataIndex)
         }
     }
 
@@ -240,23 +267,28 @@ function App() {
         })
     }
 
+    function createEventWithCurrentTime(date: Date) {
+        createPreviewEvent(date, -1, 1)
+    }
+
     return (
         <>
             <div className='App'>
                 <div className="main_content">
-                    <Sidebar />
+                    <Sidebar createEventWithCurrentTime={createEventWithCurrentTime}/>
                     <div className="calendar_content">
                         <CalendarHeader weekArray={weekArray} />
                         <div id='calendar_root' className='container' onDragOver={containerDragOverHandler} onDropCapture={containerDragDropHandler}>
-                            {weekArray.map((dayOfWeek, rowViewID) => (
+                            {weekArray.map((dayOfWeek: Date, rowViewID: number) => (
                                 <Row
                                     dayOfWeek={dayOfWeek}
-                                    key={rowViewID} // TODO: Maybe change the key to ID?
+                                    key={rowViewID} 
+                                    idx={rowViewID}
                                     eventHandlers={{
                                         mouseUp: rowMouseUpHandler.bind(null, dayOfWeek)
                                     }}
                                     rowHeight={boardState.viewportHeight}>
-                                    {boardState.eventDayCollection[hashDate(dayOfWeek)]?.eventCollection.map((event, dayViewID) => (
+                                    {boardState.eventDayCollection[hashDate(dayOfWeek)]?.eventCollection.map((event: IEvent, dayViewID: number) => (
                                         <Card
                                             event={event}
                                             key={`${rowViewID} + ${dayViewID}`}
@@ -278,7 +310,12 @@ function App() {
             </div>
             { eventState.modal ? (
                 ReactDOM.createPortal(
-                    <Modal event={eventState.modalEvent} setModal={setModal} updater={updateEvent} deleter={deleteEvent} />,
+                    <Modal 
+                        event={eventState.modalEvent} 
+                        setModal={setModal} 
+                        updater={updateEvent} 
+                        deleter={deleteEvent} 
+                        invoker={modalInvoker}/>,
                     document.getElementById("root")
                 )) : undefined}
         </>
@@ -293,8 +330,6 @@ function CalendarTime (props) {
         return height * (idx/24) + initialOffset
     })
 
-    console.dir(svgRoot)
-
     function formattedHour(hour: number): string {
         return dateFns.format(new Date(1997, 4, 20, hour), 'h aaaa')
 
@@ -305,7 +340,7 @@ function CalendarTime (props) {
                 {timeArray.map((time, idx) => (
                     <>
                         <text x="10" y={time * 2} style={{fontSize: '24px'}}>{formattedHour(idx + 1 )}</text>
-                        <line key={time} x1="0" y1={time * 2} x2={svgRoot.offsetWidth * 2} y2={time * 2} style={{stroke: "rgb(140, 140, 140)", strokeWidth: "1"}}/>
+                        <line key={time} x1="0" y1={time * 2} x2={svgRoot.offsetWidth * 2} y2={time * 2} style={{stroke: "#ccc", strokeWidth: "1"}}/>
                     </>
                 ))}
             </svg>}

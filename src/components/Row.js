@@ -14,6 +14,7 @@ export default function Row({
     return (
         <div
             data-date={dayOfWeek.toString()}
+            data-idx={props.idx}
             className={`${styles.row} rowEvent`}
             style={{ height: `${rowHeight}px` }}
             onMouseUp={eventHandlers.mouseUp}

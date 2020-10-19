@@ -29,3 +29,17 @@ export function locateDay(date: Date, context: IBoard): IDay | undefined {
     return context.eventDayCollection[hashDate(date)]
 }
 
+export function getCalendarInfo() {
+    const calendarRoot = document.getElementById('calendar_root')
+    const LEFT_OFFSET = calendarRoot.offsetLeft 
+    const TOP_OFFSET = calendarRoot.offsetTop 
+    const SCROLL_OFFSET = calendarRoot.scrollTop
+    const WIDTH = calendarRoot.offsetWidth
+    return {
+        LEFT_OFFSET,
+        TOP_OFFSET,
+        SCROLL_OFFSET,
+        WIDTH
+    } 
+}
+
