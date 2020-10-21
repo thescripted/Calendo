@@ -43,9 +43,25 @@ export default function Modal({ updater, deleter, event, setModal, ...props }) {
             
             const { top, left, width, height } = element.getBoundingClientRect()
             const padding = 8
+
+            // TODO: DELETE THIS.
+            console.log("Left: ", left)
+
+            // Calling a window object here isn't great. Should likely move.
+            const { innerWidth, innerHeight } = window
+            console.log(innerWidth, innerHeight)
+            let leftView
+            if ( left < innerWidth / 2 ) {
+                leftView = left + window.scrollX + width + padding
+            } else {
+                // Swap the modal to the left-side of the screen.
+                leftView = left + window.scrollX - 400 - padding // TODO: Generalize leftView.
+            }
+            // TODO: DELETE THIS.
+
             return {
                 top: top + window.scrollY,
-                left: left + window.scrollX + width + padding,
+                left: leftView,
                 opacity: 1
             }
         }
