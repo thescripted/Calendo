@@ -2,7 +2,6 @@ import React from "react"
 import styles from "./styles/CalendarHeader.module.css"
 import * as dateFns from "date-fns"
 
-//TODO: Compare leftmost and right-most day of the week to determine what Month to return.
 export default function CalendarHeader(props) {
     const {weekArray} = props
     const currentDay = getCurrentDay()

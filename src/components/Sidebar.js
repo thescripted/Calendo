@@ -2,7 +2,7 @@ import React from 'react'
 import styles from './styles/Sidebar.module.css'
 import * as dateFns from 'date-fns'
 
-export default function(props) {
+export default function({createEventWithCurrentTime}) {
     // This function will have to emit a modal on the calendarview. 
     const time = useFormattedTime()
     return (
@@ -14,7 +14,7 @@ export default function(props) {
                         {time}
                     </div>
                     <div className={styles.create_event}>
-                        <button onClick={() => props.createEventWithCurrentTime(new Date(2020, 9, 15))}>Create An Event</button>
+                        <button onClick={() => createEventWithCurrentTime(getCurrentDay())}>Create An Event</button>
                     </div>
                 </div>
                 <div className={styles.copyright}>
@@ -49,4 +49,11 @@ function useFormattedTime() {
     }, [])
 
     return time
+}
+
+    
+function getCurrentDay() {
+    const date = new Date()
+    // Locale time only. Not UTC. may need to fix.
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()) 
 }

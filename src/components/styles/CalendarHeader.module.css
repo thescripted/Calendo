@@ -11,6 +11,15 @@
     padding-right: 17px; /* This is to offset the scroll. Will be removed */
 }
 
+@keyframes appearing {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
 
 .container p {
     margin: 0;

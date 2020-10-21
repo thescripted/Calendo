@@ -17,8 +17,6 @@ export default function Modal({ updater, deleter, event, setModal, ...props }) {
         preview: true,
     }
     const [eventOptions, setEventOptions] = React.useState(defaultOptions)
-    const [view, setView] = React.useState(false)
-    const elRef = React.useRef(null)
 
     // Effect to update Event Data.
     React.useEffect(() => {
@@ -40,36 +38,51 @@ export default function Modal({ updater, deleter, event, setModal, ...props }) {
          * @return object - The CSS styling for the modal.
          */
         function getModalPosition(element) {
-            
-            const { top, left, width, height } = element.getBoundingClientRect()
-            const padding = 8
-
-            // TODO: DELETE THIS.
-            console.log("Left: ", left)
-
-            // Calling a window object here isn't great. Should likely move.
-            const { innerWidth, innerHeight } = window
-            console.log(innerWidth, innerHeight)
-            let leftView
-            if ( left < innerWidth / 2 ) {
-                leftView = left + window.scrollX + width + padding
-            } else {
-                // Swap the modal to the left-side of the screen.
-                leftView = left + window.scrollX - 400 - padding // TODO: Generalize leftView.
+            const modalDimension = { // Determined elsewhere. This is a placeholder.
+                width: 400,
+                height: 226
             }
-            // TODO: DELETE THIS.
-
-            return {
+            const viewportDimension = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            }
+            const elementDimensions = element.getBoundingClientRect()
+            const { top, left, width } = elementDimensions
+            const padding = 4
+            const CSSObject = {
                 top: top + window.scrollY,
-                left: leftView,
-                opacity: 1
+                left: left + width + window.scrollX + padding,
+                opacity: 1,
+                pivot: false // Used for determining animation direction
             }
+
+            if (left > viewportDimension.width / 2) {
+                CSSObject.left = left - modalDimension.width - padding
+                CSSObject.pivot = true
+            }
+
+            let heightBuffer = 4
+            if (CSSObject.top < heightBuffer) {
+                CSSObject.top = heightBuffer 
+            } else if (CSSObject.top >= viewportDimension.height - modalDimension.height - heightBuffer + window.scrollY) {
+                CSSObject.top = viewportDimension.height - modalDimension.height - heightBuffer + window.scrollY
+            }
+
+            let widthBuffer = 8
+            if (CSSObject.left < widthBuffer) {
+                CSSObject.left = widthBuffer
+            } else if (CSSObject.left >= viewportDimension.width - modalDimension.width - widthBuffer + window.scrollX) {
+                CSSObject.left = viewportDimension.width - modalDimension.width - widthBuffer + window.scrollX
+            }
+
+            return CSSObject
         }
 
         const eventViewObject = document.querySelector(`[data-eventid="${event.eventID}"]`)
         const viewData = getModalPosition(eventViewObject)
+        const pivot = viewData.pivot
+        delete viewData.pivot
         styleObject = {...styleObject, ...viewData}
-        setView(true)
         return () => {
             styleObject = {}
         }
@@ -100,7 +113,7 @@ export default function Modal({ updater, deleter, event, setModal, ...props }) {
     const formattedDate = dateFns.format(event.date, 'EEEE, MMMM do');
     return (
         <div className={styles.modal_wrapper}>
-            {(<div ref={elRef} className={styles.modal_container} style={styleObject}>
+            <div className={styles.modal_container} style={styleObject}>
                 <div className={styles.modal_header}>
                     <button className={styles.x_icon} onClick={() => {
                         deleter(event)
@@ -140,7 +153,7 @@ export default function Modal({ updater, deleter, event, setModal, ...props }) {
                         } 
                     }>Save</button>
                 </div>
-            </div>)}
+            </div>
         </div>
     );
 }
