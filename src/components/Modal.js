@@ -132,6 +132,7 @@ export default function Modal({ updater, deleter, event, setModal, ...props }) {
                             if (e.key === "Enter") {
                                 publishEvent()
                                 clearState()
+                                return
                             }
                         }}
                         rows='1'

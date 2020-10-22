@@ -19,10 +19,7 @@ export function useEvent() {
 }
 
 export function getThreshold(height: number): number {
-        return Math.max(12, height * 0.1)
-    }
-export function locateEvent(eventID: string, context: IBoard): IEvent | undefined {
-    return context.cardCollection[eventID]
+    return Math.max(12, height * 0.1)
 }
 
 export function locateDay(date: Date, context: IBoard): IDay | undefined {

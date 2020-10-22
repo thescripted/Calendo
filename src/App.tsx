@@ -5,9 +5,9 @@ import Row from './components/Row'
 import Card from './components/Card'
 import Modal from './components/Modal'
 import Sidebar from './components/Sidebar'
-import { hashDate, useEvent, getThreshold, locateEvent, locateDay, getCalendarInfo } from './support'
+import { hashDate, useEvent, getThreshold, locateDay, getCalendarInfo } from './support'
 import * as dateFns from 'date-fns'
-import { IEvent, IEventUpdateConfig, IDay, IModalInvoker } from './types/calendo'
+import { IEvent, IEventUpdateConfig, IModalInvoker } from './types/calendo'
 import { useWeek } from './TimeContext'
 import { useBoard, useBoardAPI } from './StoreContext'
 
@@ -57,8 +57,6 @@ invisibleImage.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAAB
 const defaultModalInvoker: IModalInvoker = {
     invoked: false,
     eventID: "",
-    locator: -1,
-    pivot: false
 }
 
 function App() {
@@ -74,18 +72,21 @@ function App() {
     // the modal along with an updated Boardstate.
     React.useEffect(() => {
         if (modalInvoker.invoked) {
-            emitModal(locateEvent(modalInvoker.eventID, boardState), modalInvoker.locator)
+        setEventState({ ...eventState, modal: true, modalEvent: boardState.cardCollection[modalInvoker.eventID]})
         }
     }, [boardState.cardCollection, modalInvoker])
+
+    // Effect to Scroll to bottom of Calendar Container. Typically Starts at 9am.
+    // In thie future, this will be dependent on the time of day.
+    React.useEffect(() => {
+        const rootElem = document.getElementById('calendar_root')
+        rootElem.scrollTop = rootElem.scrollHeight
+    }, [])
 
     // Wrapper for setEventState. This is passed to the modal view to only update the modalState.
     function setModal(value: boolean) {
         setEventState({ ...eventState, modal: value, modalEvent: undefined })
         setModalInvoker(defaultModalInvoker)
-    }
-
-    function emitModal(event: IEvent, location: any): void {
-        setEventState({ ...eventState, modal: true, modalEvent: event })
     }
 
     function finalizeCardMovement(cardEvent: IEvent) {
@@ -137,35 +138,9 @@ function App() {
         }
         const eventID = generateEvent(eventConfig)
 
-        // Modal index is determined via closure. This function may move somewhere else so beware.
-        function calculateModalLocation() {
-            // 1. Position the modal relative to the calendar Root.
-            const { LEFT_OFFSET, WIDTH } = getCalendarInfo()
-
-            // 2. Determine how many days are present in the view and subdivide.
-            const ROWS = weekArray.length
-            const SUBDIVISION = WIDTH / ROWS
-            const PADDING = 12
-
-            // 3. Compute
-            let locator: number, pivot: boolean
-            if (modalIdx < Math.floor(ROWS / 2)) {
-                pivot = false 
-                locator = LEFT_OFFSET + SUBDIVISION*(+modalIdx + 1) + PADDING
-            } else {
-                pivot = true 
-                locator = LEFT_OFFSET + SUBDIVISION*(+modalIdx) - PADDING
-            }
-
-            // 4. Return the pixel value to be consumed in the modalInvoker.
-            return {locator, pivot} 
-        }
-        const { locator, pivot } = calculateModalLocation()
         setModalInvoker({
             invoked: true,
             eventID: eventID,
-            locator: locator,
-            pivot: pivot
         })
     }
 
@@ -211,15 +186,10 @@ function App() {
         updateEvent(event, { startTime: updatedStartTime, endTime: updatedEndTime, date: eventDate, Day: eventDay, preview: preview }) // Triggers an event update
     }
 
-    function cardMouseDownHandler(event, card: IEvent) {
-        // setEventState({...eventState, dragging: card, isDragging: true})
-    }
-
     function cardDragStartHandler(cardEvent: IEvent, ev) {
         ev.dataTransfer.setDragImage(invisibleImage, 0, 0)
         const clientHeight = ev.currentTarget.clientHeight
         const offsetThreshold = getThreshold(clientHeight)
-        console.log(`Offset: ${ev.nativeEvent.offsetY}, ClientHeight: ${clientHeight}, threshold: ${clientHeight - offsetThreshold}`)
 
         // To Determine if the card should be "carried" or "dragged" depends on the user click location.
         if (ev.nativeEvent.offsetY > clientHeight - offsetThreshold) {
@@ -267,9 +237,60 @@ function App() {
         })
     }
 
+    // Generates a preview Event based on the current Time. 
+    // Operation is the exact same as "createPreviewEvent" but independent of the cursor position.
     function createEventWithCurrentTime(date: Date) {
-        createPreviewEvent(date, -1, 1)
+        const startTime = getNearestStartTime(date)
+        const defaultEndTime = dateFns.add(startTime, {
+            minutes: 60 // 1 Hour by default.
+        })
+        const eventConfig: IEventUpdateConfig = {
+            startTime: startTime,
+            endTime: defaultEndTime,
+            date: date,
+            Day: boardState.eventDayCollection[hashDate(date)],
+            content: "",
+            preview: true
+        }
+        const eventID = generateEvent(eventConfig)
+
+        setModalInvoker({
+            ...modalInvoker,
+            invoked: true,
+            eventID: eventID,
+        })
+
+        // falls foward to the next 30 minute interval. 
+        // example: 3:17pm  -> 3:30pm
+        // example: 5:31pm -> 6:00pm
+        function getNearestStartTime(today: Date): Date {
+            const currentTime = new Date()
+            let limitExceeded = false
+            let counter = 0
+            let correctTime = today
+            while (!limitExceeded) {
+                console.log("Correct: ", correctTime)
+                console.log("Current: ", currentTime)
+                counter += 1
+                if (counter === 48) {
+                    limitExceeded = true
+                }
+                correctTime = dateFns.add(correctTime, {
+                    minutes: 30
+                })
+                if (currentTime <= correctTime) {
+                    return correctTime
+                }
+            }
+            return today
+        }
+
     }
+
+    function cardClickHandler(event: IEvent, e): void {
+
+    }
+
 
     return (
         <>
@@ -295,8 +316,8 @@ function App() {
                                             scale={boardState.viewportHeight}
                                             grid={boardState.heightIndex}
                                             eventHandlers={{
-                                                mouseDown: cardMouseDownHandler.bind(null, event),
-                                                dragStart: cardDragStartHandler.bind(null, event)
+                                                dragStart: cardDragStartHandler.bind(null, event),
+                                                click: cardClickHandler.bind(null, event)
                                             }}
                                         />
                                     ))}
@@ -336,12 +357,12 @@ function CalendarTime (props) {
     }
     return (
         <div id="svg_root" className="svg_root">
-            {svgRoot && <svg viewBox={`0 0 ${svgRoot.offsetWidth * 2} ${height * 2}`}>
+            {svgRoot && <svg width={svgRoot.offsetWidth} viewBox={`0 0 ${svgRoot.offsetWidth * 2} ${height * 2}`}>
                 {timeArray.map((time, idx) => (
-                    <>
+                    <React.Fragment key={idx}>
                         <text x="10" y={time * 2} style={{fontSize: '24px'}}>{formattedHour(idx + 1 )}</text>
                         <line key={time} x1="0" y1={time * 2} x2={svgRoot.offsetWidth * 2} y2={time * 2} style={{stroke: "#ccc", strokeWidth: "1"}}/>
-                    </>
+                    </React.Fragment>
                 ))}
             </svg>}
         </div>
