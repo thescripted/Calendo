@@ -1,20 +1,20 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import CalendarHeader from './components/CalendarHeader'
+import Header from './components/Header'
 import Row from './components/Row'
-import Card from './components/Card'
-import Modal from './components/Modal'
+import Card from './components/Event'
+import Modal from './components/modal/Modal'
 import Sidebar from './components/Sidebar'
 import { hashDate, useEvent, getThreshold, locateDay, getCalendarInfo } from './support'
 import * as dateFns from 'date-fns'
 import { IEvent, IEventUpdateConfig, IModalInvoker } from './types/calendo'
-import { useWeek } from './TimeContext'
-import { useBoard, useBoardAPI } from './StoreContext'
+import { useWeek } from './context/TimeContext'
+import { useBoard, useBoardAPI } from './context/StoreContext'
 
 /**
  * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
- * @param {number} The absolute y-coordinate, relative to the page.
- * @returns {number} Returns the coordinate relative to the calendar.
+ * @param {number} - The absolute y-coordinate, relative to the page.
+ * @returns {number} - Returns the coordinate relative to the calendar.
  */
 function getRelativePosition(xCoordinate: number, yCoordinate: number): number[] {
     const { LEFT_OFFSET, TOP_OFFSET, SCROLL_OFFSET } = getCalendarInfo()
@@ -60,19 +60,19 @@ const defaultModalInvoker: IModalInvoker = {
 }
 
 function App() {
-    const {boardState} = useBoard()
-    const {weekArray} = useWeek()
-    const {eventState, setEventState} = useEvent()
-    const {generateEvent, updateEvent, deleteEvent} = useBoardAPI({eventState, setEventState})
+    const { boardState } = useBoard()
+    const { weekArray } = useWeek()
+    const { eventState, setEventState } = useEvent()
+    const { generateEvent, updateEvent, deleteEvent } = useBoardAPI({ eventState, setEventState })
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
- 
+
     // useEffect for toggling the modal. 
     // This relies on the cardollection being appropriately updated, but since this card
     // collection can be updated by many different places, a modalInvoker is used to toggle
     // the modal along with an updated Boardstate.
     React.useEffect(() => {
         if (modalInvoker.invoked) {
-        setEventState({ ...eventState, modal: true, modalEvent: boardState.cardCollection[modalInvoker.eventID]})
+            setEventState({ ...eventState, modal: true, modalEvent: boardState.cardCollection[modalInvoker.eventID] })
         }
     }, [boardState.cardCollection, modalInvoker])
 
@@ -114,12 +114,12 @@ function App() {
     function createPreviewEvent(date: Date, yCoordinate: number, modalIdx: number): void {
         let startTime: Date
         if (yCoordinate > 0) {
-        const [_, yPosition] = getRelativePosition(0, yCoordinate)
-        const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
+            const [_, yPosition] = getRelativePosition(0, yCoordinate)
+            const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
 
-        startTime = dateFns.add(date, {
-            minutes: 30 * slotIndex
-        })
+            startTime = dateFns.add(date, {
+                minutes: 30 * slotIndex
+            })
         } else {
             // generate default startTime based on currentTime.
             const initialDate = new Date()
@@ -296,14 +296,14 @@ function App() {
         <>
             <div className='App'>
                 <div className="main_content">
-                    <Sidebar createEventWithCurrentTime={createEventWithCurrentTime}/>
+                    <Sidebar createEventWithCurrentTime={createEventWithCurrentTime} />
                     <div className="calendar_content">
-                        <CalendarHeader weekArray={weekArray} />
+                        <Header weekArray={weekArray} />
                         <div id='calendar_root' className='container' onDragOver={containerDragOverHandler} onDropCapture={containerDragDropHandler}>
                             {weekArray.map((dayOfWeek: Date, rowViewID: number) => (
                                 <Row
                                     dayOfWeek={dayOfWeek}
-                                    key={rowViewID} 
+                                    key={rowViewID}
                                     idx={rowViewID}
                                     eventHandlers={{
                                         mouseUp: rowMouseUpHandler.bind(null, dayOfWeek)
@@ -323,7 +323,7 @@ function App() {
                                     ))}
                                 </Row>
                             ))}
-                        <CalendarTime />
+                            <SVGHour />
                         </div>
                     </div>
                 </div>
@@ -331,24 +331,24 @@ function App() {
             </div>
             { eventState.modal ? (
                 ReactDOM.createPortal(
-                    <Modal 
-                        event={eventState.modalEvent} 
-                        setModal={setModal} 
-                        updater={updateEvent} 
-                        deleter={deleteEvent} 
-                        invoker={modalInvoker}/>,
+                    <Modal
+                        event={eventState.modalEvent}
+                        setModal={setModal}
+                        updater={updateEvent}
+                        deleter={deleteEvent}
+                        invoker={modalInvoker} />,
                     document.getElementById("root")
                 )) : undefined}
         </>
     );
 }
 
-function CalendarTime (props) {
+function SVGHour() {
     const svgRoot = document.getElementById('svg_root')
-    const height = 900 
+    const height = 900
     const initialOffset = height / 24;
-    const timeArray = Array.from({length: 23}).map((_, idx) => {
-        return height * (idx/24) + initialOffset
+    const timeArray = Array.from({ length: 23 }).map((_, idx) => {
+        return height * (idx / 24) + initialOffset
     })
 
     function formattedHour(hour: number): string {
@@ -360,8 +360,8 @@ function CalendarTime (props) {
             {svgRoot && <svg width={svgRoot.offsetWidth} viewBox={`0 0 ${svgRoot.offsetWidth * 2} ${height * 2}`}>
                 {timeArray.map((time, idx) => (
                     <React.Fragment key={idx}>
-                        <text x="10" y={time * 2} style={{fontSize: '24px'}}>{formattedHour(idx + 1 )}</text>
-                        <line key={time} x1="0" y1={time * 2} x2={svgRoot.offsetWidth * 2} y2={time * 2} style={{stroke: "#ccc", strokeWidth: "1"}}/>
+                        <text x="10" y={time * 2} style={{ fontSize: '24px' }}>{formattedHour(idx + 1)}</text>
+                        <line key={time} x1="0" y1={time * 2} x2={svgRoot.offsetWidth * 2} y2={time * 2} style={{ stroke: "#ccc", strokeWidth: "1" }} />
                     </React.Fragment>
                 ))}
             </svg>}
@@ -369,7 +369,5 @@ function CalendarTime (props) {
     )
 
 }
-
-
 
 export default App;

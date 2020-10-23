@@ -1,7 +1,7 @@
 import React from 'react'
-import {useBoard} from './StoreContext'
-import {hashDate} from './support'
-import {add, startOfWeek, sub} from 'date-fns'
+import { useBoard } from './StoreContext'
+import { hashDate } from '../support'
+import { add, startOfWeek, sub } from 'date-fns'
 
 const TimeContext = React.createContext(undefined)
 
@@ -21,7 +21,7 @@ export function useWeek() {
     if (!context) {
         throw new Error("useWeek can only be used under TimeContext")
     }
-    const {weekArray, setWeekArray} = context
+    const { weekArray, setWeekArray } = context
 
     // increments the weekArray by a given number of days. 
     function incrementDays(days: number = 7) {
@@ -37,7 +37,7 @@ export function useWeek() {
     function decrementDays(days: number = 7) {
         const newWeekArray = weekArray.map((weekDay) => {
             return sub(weekDay, {
-                days: days 
+                days: days
             })
         })
         setWeekArray(newWeekArray)
@@ -58,13 +58,13 @@ export function useWeek() {
 
 export function WeekProvider(props) {
     const [weekArray, setWeekArray] = React.useState<Date[]>(default_week())
-    const {boardState, setBoardState} = useBoard()
+    const { boardState, setBoardState } = useBoard()
 
     // On weekArray state change, automatically create new eventDays if one does not exist.
     React.useEffect(() => {
         let updatedState = {
-            eventDayCollection: {...boardState.eventDayCollection}
-        } 
+            eventDayCollection: { ...boardState.eventDayCollection }
+        }
         weekArray.forEach(dayOfWeek => {
             if (boardState.eventDayCollection[hashDate(dayOfWeek)] === undefined) {
                 // produce new board state
@@ -74,7 +74,7 @@ export function WeekProvider(props) {
                     dayID: id,
                     eventCollection: []
                 }
-                setBoardState({...boardState, ...updatedState})
+                setBoardState({ ...boardState, ...updatedState })
             }
         })
     }, [weekArray])
@@ -86,7 +86,7 @@ export function WeekProvider(props) {
         }
     }, [weekArray])
 
-    return(
-        <TimeContext.Provider value={value} {...props}/>
+    return (
+        <TimeContext.Provider value={value} {...props} />
     )
 }

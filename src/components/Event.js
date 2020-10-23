@@ -1,10 +1,10 @@
 import React from 'react';
-import styles from './styles/Card.module.css';
+import styles from './styles/Event.module.css';
 import * as dateFns from 'date-fns';
 import {getThreshold} from '../support';
 
 
-export default function Card({ event, eventHandlers, ...props }) {
+export default function Event({ event, eventHandlers, ...props }) {
     const formattedStartTime = dateFns.format(event.startTime, 'hh:mm a');
     const formattedEndTime = dateFns.format(event.endTime, 'hh:mm a');
     const eventIntRatio = dateFns.differenceInMinutes(event.endTime, event.startTime) / (24 * 60);

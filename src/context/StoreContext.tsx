@@ -1,7 +1,7 @@
 import React from 'react'
-import { IHeightIndex, IBoard, IEvent, IEventUpdateConfig } from '../src/types/calendo'
+import { IHeightIndex, IBoard, IEvent, IEventUpdateConfig } from '../../src/types/calendo'
 import produce from 'immer';
-import { ROW_HEIGHT } from './support/Constant'
+import { ROW_HEIGHT } from '../support/Constant'
 import { v4 as uuidv4 } from 'uuid'
 
 class BoardGenerator {
@@ -15,7 +15,7 @@ class BoardGenerator {
     private _viewportHeight: number
     private _numRows: number
     private _heightIndex: IHeightIndex
-  
+
     private _generateHeightIndex(hour, subdivision): IHeightIndex {
         const HourToViewScale = this._viewportHeight / (hour * subdivision)
         const Offset = HourToViewScale / 2
@@ -51,8 +51,8 @@ function validate(event: IEvent, stagedState: IBoard): void {
 function useBoardAPI(localEventContext) {
     const context = React.useContext(StoreContext)
 
-    const {boardState, setBoardState} = context
-    const {eventState, setEventState} = localEventContext
+    const { boardState, setBoardState } = context
+    const { eventState, setEventState } = localEventContext
 
     function generateEvent(options: IEventUpdateConfig): string {
         const eventID = uuidv4()
@@ -92,10 +92,10 @@ function useBoardAPI(localEventContext) {
                 draftState.eventDayCollection[options.Day.dayID].eventCollection.push({ ...cardItem, ...options })
                 // Since this condition only apply when we are "carrying a card", update that carrying object state.
                 const nextCarryingState = produce(eventState, draftState => {
-                  draftState.carrying = { ...draftState.carrying, ...options }
+                    draftState.carrying = { ...draftState.carrying, ...options }
                 })
                 setEventState(nextCarryingState)
-  
+
             } else {
                 oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
                     if (singleEvent.eventID === event.eventID) {
@@ -129,7 +129,7 @@ function useBoardAPI(localEventContext) {
         setBoardState(nextState)
     }
 
-    return {generateEvent, updateEvent, deleteEvent}
+    return { generateEvent, updateEvent, deleteEvent }
 }
 
 function useBoard() {
@@ -138,7 +138,7 @@ function useBoard() {
         throw new Error(`useBoard must be used within a BoardProvider`)
     }
 
-    const {boardState, setBoardState} = context
+    const { boardState, setBoardState } = context
 
     return {
         boardState,
@@ -150,9 +150,9 @@ function BoardProvider(props) {
     const Board = new BoardGenerator(ROW_HEIGHT)
     const [boardState, setBoardState] = React.useState<IBoard>(Board.generateInitialBoardState())
 
-    const value = React.useMemo(function() {
+    const value = React.useMemo(function () {
         return {
-            boardState, 
+            boardState,
             setBoardState,
             Board
         }
@@ -160,5 +160,5 @@ function BoardProvider(props) {
     return <StoreContext.Provider value={value} {...props} />
 }
 
-export {StoreContext, BoardProvider, useBoard, useBoardAPI}
+export { StoreContext, BoardProvider, useBoard, useBoardAPI }
 

@@ -1,9 +1,9 @@
 import React from 'react'
-import {useWeek} from '../TimeContext'
+import {useWeek} from '../context/TimeContext'
 import styles from "./styles/Navigation.module.css"
 import * as dateFns from "date-fns"
-import { ReactComponent as LeftArrow } from './left_arrow.svg'
-import { ReactComponent as RightArrow } from './right_arrow.svg'
+import { ReactComponent as LeftArrow } from './static/leftArrow.svg'
+import { ReactComponent as RightArrow } from './static/rightArrow.svg'
 
 export default function Navigation(props) {
     const { weekArray, incrementDays, decrementDays, jumpToToday } = useWeek()

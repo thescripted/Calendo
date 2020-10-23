@@ -1,8 +1,8 @@
 import React from "react"
-import styles from "./styles/CalendarHeader.module.css"
+import styles from "./styles/Header.module.css"
 import * as dateFns from "date-fns"
 
-export default function CalendarHeader(props) {
+export default function Header(props) {
     const {weekArray} = props
     const currentDay = getCurrentDay()
     return (
