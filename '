@@ -1,20 +1,10 @@
 import React from 'react'
 import { IEventState, IDay, IEvent, IBoard } from '../types/calendo'
 
-
 /**
  * Perform shallow equality by iterating through keys on an object and returning false
  * when any key has values that are not strictly equal.
- *
- * Shallow equality is used due to the fact that "deep" equality creates cycles in this application.
- * e.g.)
- *      Two Calendar Events has a reference to a Day event. 
- *      The Day events have an array of Calendar events in it.
- *      Each of those Calendar Events has a reference to a Day event.
- *      And so it goes...
- *
- *  Lodash currently does not support control for depth-level deep equalities.
- *  So I'm using a Shallow equality instead and ignoring the attribute that will create cycles.
+ * Unsupported natively nor in Lodash, so this will do.
  *
  * This does not currently support all edge-case for shallow equality (e.g., invalid inputs, reference equality)
  */
@@ -24,25 +14,11 @@ export function isShallowEqual(obj1: Object, obj2: Object) {
     if (keysA.length !== keysB.length) {
         return false
     }
-
-    // checks for equalities only on conditions where the item is a primitive type.
-    function simpleEqual(value1: any, value2: any): boolean {
-        if (value1 instanceof Date && value2 instanceof Date) {
-            return value1.getTime() === value2.getTime()
-        }
-        //Sloppy. 
-        if (typeof value1 === 'object' && typeof value2 === 'object') {
-            return true
-        }
-
-        return value1 === value2
-
-    }
     for (let i = 0; i < keysA.length; i++) {
-
+        console.log(obj1, obj2)
         if (
             !Object.prototype.hasOwnProperty.call(obj2, keysA[i]) ||
-            !simpleEqual(obj1[keysA[i]], obj2[keysB[i]]) // NOTE: Highly specific 'is' function, suited ONLY for this application.
+            obj1[keysA[i]] !== obj2[keysA[i]]
         ) {
             return false
         }
@@ -54,7 +30,6 @@ export function hashDate(date: Date) {
     return (+date).toString(36);
 }
 
-// Should be moved elsewhere.
 export function useEvent() {
     const defaultEventState: IEventState = {
         dragging: undefined,
@@ -89,3 +64,6 @@ export function getCalendarInfo() {
         WIDTH
     } 
 }
+
+
+

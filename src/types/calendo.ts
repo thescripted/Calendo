@@ -55,5 +55,6 @@ export interface IEventState {
 export interface IModalInvoker {
     invoked: boolean
     eventID: string
+    feature?: boolean // if true, will invoke "feature modal" instead of "main modal"
 }
 

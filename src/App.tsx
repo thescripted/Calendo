@@ -255,7 +255,6 @@ function App() {
         const eventID = generateEvent(eventConfig)
 
         setModalInvoker({
-            ...modalInvoker,
             invoked: true,
             eventID: eventID,
         })
@@ -269,8 +268,6 @@ function App() {
             let counter = 0
             let correctTime = today
             while (!limitExceeded) {
-                console.log("Correct: ", correctTime)
-                console.log("Current: ", currentTime)
                 counter += 1
                 if (counter === 48) {
                     limitExceeded = true
@@ -288,7 +285,11 @@ function App() {
     }
 
     function cardClickHandler(event: IEvent, e): void {
-
+        setModalInvoker({
+            eventID: event.eventID,
+            invoked: true,
+            feature: true
+        })
     }
 
 

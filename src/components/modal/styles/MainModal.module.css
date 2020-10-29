@@ -1,0 +1,157 @@
+.modal_wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    top: 0;
+}
+
+.modal_container {
+    position: absolute;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+    width: 400px;
+    background: white;
+    border-radius: 5px;
+    opacity: 0;
+    animation: appear 0.15s ease;
+}
+
+@keyframes appear {
+    0% {
+        transform: translateX(-16px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0px);
+        opacity: 1;
+    }
+}
+
+.modal_header {
+    display: flex;
+    justify-content: flex-end;
+    background: #ccc;
+    padding: 8px 4px;
+    border-radius: 3px 3px 0 0;
+    font-size: 16px;
+}
+
+.x_icon {
+    border: none;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background-color: transparent;
+    font-size: 32px;
+    justify-content: right;
+    text-align: center;
+    transition: 0.1s;
+    /* background: gray; */
+}
+
+.x_icon::after {
+    content: '×';
+}
+
+.x_icon:hover {
+    background: darkslategray;
+    color: white;
+}
+
+.modal_main {
+    padding: 18px 10px 18px 36px;
+}
+
+.modal_main > * {
+    margin-bottom: 4px;
+}
+
+.modal_dates_area {
+    display: flex;
+}
+
+.modal_dates_area button {
+    background: transparent;
+    border: none;
+    padding: 2px 8px;
+    transition: 0.1s background;
+    border-radius: 3px;
+    height: 28px;
+    margin-left: 2px;
+    font-size: 14px;
+    color: #666;
+}
+
+.icon::after {
+    content: '-';
+}
+
+.modal_dates_area button:hover {
+    background: lightblue;
+}
+
+.timezone {
+    padding-left: 10px;
+    font-size: 12px;
+}
+
+.modal_main textarea {
+    width: 100%;
+    resize: none;
+    border: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+        'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 26px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.modal_main textarea:focus {
+    outline: none;
+    border-bottom: 2px solid green;
+}
+
+.modal_footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 14px;
+}
+
+.modal_footer button {
+    background-color: darkcyan;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 3px;
+    font-size: 16px;
+    font-weight: 600;
+    box-sizing: border-box;
+    transition: 0.2s background-color;
+}
+
+.modal_footer button:focus {
+    outline: none;
+}
+
+.modal_footer button:hover {
+    background-color: green;
+}
+
+.hover {
+    position: relative;
+}
+.hover:after {
+    background: none repeat scroll 0 0 transparent;
+    bottom: 0;
+    content: '';
+    display: block;
+    height: 2px;
+    left: 50%;
+    position: absolute;
+    background: darkcyan;
+    transition: width 0.3s ease 0s, left 0.3s ease 0s;
+    width: 0;
+}
+.hover:focus:after {
+    width: 100%;
+    left: 0;
+}

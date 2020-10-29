@@ -1,0 +1,19 @@
+.container {
+    position: absolute;
+    background: transparent;
+    width: 400px;
+    border-radius: 5px;
+    opacity: 1;
+    /* animation: appear 0.15s ease; */
+}
+/* 
+@keyframes appear {
+    0% {
+        transform: translateX(-16px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0px);
+        opacity: 1;
+    }
+} */
