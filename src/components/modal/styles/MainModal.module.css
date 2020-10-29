@@ -126,6 +126,11 @@
     font-weight: 600;
     box-sizing: border-box;
     transition: 0.2s background-color;
+    margin-left: 2px;
+}
+
+.modal_footer .delete {
+    background-color: darkred;
 }
 
 .modal_footer button:focus {
@@ -135,6 +140,11 @@
 .modal_footer button:hover {
     background-color: green;
 }
+
+.modal_footer .delete:hover {
+    background-color: red;
+}
+
 
 .hover {
     position: relative;

@@ -97,8 +97,8 @@ export default function MainModal ({ updater, deleter, event, setModal, ...props
         setEventOptions(newState)
     }
 
-    function publishEvent() {
-        if (event.content === "") {
+    function publishEvent(withDelete) {
+        if (event.content === "" || withDelete) {
             deleter(event)
         } else {
         updater(event, {...eventOptions, preview: false})
@@ -149,6 +149,11 @@ export default function MainModal ({ updater, deleter, event, setModal, ...props
                     </div>
                 </div>
                 <div className={styles.modal_footer}>
+                    <button className={styles.delete} onClick={() => {
+                        publishEvent(true)
+                        clearState()
+                        } 
+                    }>Delete</button>
                     <button onClick={() => {
                         publishEvent()
                         clearState()

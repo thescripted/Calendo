@@ -78,45 +78,42 @@ function useBoardAPI(localEventContext) {
         return eventID
     }
 
-    // memoizings options in-mem. Useful to ensure event only get updated with new values.
     function updateEvent(event: IEvent, options: IEventUpdateConfig): void {
-        console.log("Options: ", options, " Opts: ", opts)
         if (!isShallowEqual(options, opts)) {
-                console.log("Changed!")
-                setOpts(options)
-                const nextState: IBoard = produce<IBoard>(boardState, draftState => {
-                    const cardItem = draftState.cardCollection[event.eventID]
-                    draftState.cardCollection[event.eventID] = { ...cardItem, ...options }
+            setOpts(options)
+            const nextState: IBoard = produce<IBoard>(boardState, draftState => {
+                const cardItem = draftState.cardCollection[event.eventID]
+                draftState.cardCollection[event.eventID] = { ...cardItem, ...options }
 
-                    // Event has moved to a different date.
-                    let oldEventArray: IEvent[]
-                    if (options.date && event.date.valueOf() !== options.date.valueOf()) {
-                        oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.filter(singleEvent => {
-                            if (singleEvent.eventID !== event.eventID) {
-                                return singleEvent
-                            }
-                        })
-                        draftState.eventDayCollection[options.Day.dayID].eventCollection.push({ ...cardItem, ...options })
-                        // Since this condition only apply when we are "carrying a card", update that carrying object state.
-                        const nextCarryingState = produce(eventState, draftState => {
-                            draftState.carrying = { ...draftState.carrying, ...options }
-                        })
-                        setEventState(nextCarryingState)
-
-                    } else {
-                        oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
-                            if (singleEvent.eventID === event.eventID) {
-                                return { ...cardItem, ...options }
-                            }
+                // Event has moved to a different date.
+                let oldEventArray: IEvent[]
+                if (options.date && event.date.valueOf() !== options.date.valueOf()) {
+                    oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.filter(singleEvent => {
+                        if (singleEvent.eventID !== event.eventID) {
                             return singleEvent
-                        })
-                    }
+                        }
+                    })
+                    draftState.eventDayCollection[options.Day.dayID].eventCollection.push({ ...cardItem, ...options })
+                    // Since this condition only apply when we are "carrying a card", update that carrying object state.
+                    const nextCarryingState = produce(eventState, draftState => {
+                        draftState.carrying = { ...draftState.carrying, ...options }
+                    })
+                    setEventState(nextCarryingState)
 
-                    draftState.eventDayCollection[event.Day.dayID].eventCollection = oldEventArray
-                })
-                validate(event, nextState)
-                setBoardState(nextState)
-            }
+                } else {
+                    oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.map(singleEvent => {
+                        if (singleEvent.eventID === event.eventID) {
+                            return { ...cardItem, ...options }
+                        }
+                        return singleEvent
+                    })
+                }
+
+                draftState.eventDayCollection[event.Day.dayID].eventCollection = oldEventArray
+            })
+            validate(event, nextState)
+            setBoardState(nextState)
+        }
     }
 
     // TODO: Make use of this. Can be used in validation or by user request.
