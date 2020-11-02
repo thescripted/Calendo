@@ -16,5 +16,5 @@ to build and serve a development-ready application locally.
 
 ## Upcoming Features & Changes
 
-[] URL-based sessions:
-[] Export: Provide the ability to export your events to Google Calendar or iCloud Calendar.
+- [ ] URL-based sessions:
+- [ ] Export: Provide the ability to export your events to Google Calendar or iCloud Calendar.
