@@ -7,7 +7,9 @@ Calendo is a 're-invention' of the wheel: It was an attempt to re-create core fe
 
 ## Development
 Calendo is built on top of create-react-app. To run Calendo locally, clone this repository and run
-`yarn`
+```
+yarn
+```
 to download the necessary dependencies. Then run
 ```
 yarn start
@@ -16,5 +18,5 @@ to build and serve a development-ready application locally.
 
 ## Upcoming Features & Changes
 
-- [ ] URL-based sessions:
+- [ ] URL-based sessions: Persist Calendar Events, accessible through unique URLs. 
 - [ ] Export: Provide the ability to export your events to Google Calendar or iCloud Calendar.
