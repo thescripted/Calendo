@@ -77,6 +77,7 @@ export function WeekProvider(props) {
                 setBoardState({ ...boardState, ...updatedState })
             }
         })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [weekArray])
 
     const value = React.useMemo(() => {

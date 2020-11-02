@@ -22,11 +22,9 @@ export default function({createEventWithCurrentTime}) {
                         Calendo is an event-driven, TypeScript application demonstrating some of the core features of
                         Google Calendar.
                     </p>
-                    <p>Created by 
-                        <a> Benjamin Kinga</a>
-                    </p>
+                    <p>Created by <a href="https://benjaminkinga.com">Benjamin Kinga</a></p>
                     <p>
-                        <a>Source Code</a>
+                        <a href="https://github.com/thescripted/calendo">Source Code</a>
                     </p>
                 </div>
             </div>

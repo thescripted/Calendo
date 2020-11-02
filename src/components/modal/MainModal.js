@@ -23,6 +23,7 @@ export default function MainModal ({ updater, deleter, event, setModal, ...props
     // Effect to update Event Data.
     React.useEffect(() => {
         updater(event, eventOptions)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [eventOptions])
 
     // Effect to update the style Object.
@@ -82,12 +83,12 @@ export default function MainModal ({ updater, deleter, event, setModal, ...props
 
         const eventViewObject = document.querySelector(`[data-eventid="${event.eventID}"]`)
         const viewData = getModalPosition(eventViewObject)
-        const pivot = viewData.pivot
         delete viewData.pivot
         styleObject = {...styleObject, ...viewData}
         return () => {
             styleObject = {}
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     function updateEventOptions(e) {

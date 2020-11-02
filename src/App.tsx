@@ -16,11 +16,10 @@ import { useBoard, useBoardAPI } from './context/StoreContext'
  * @param {number} - The absolute y-coordinate, relative to the page.
  * @returns {number} - Returns the coordinate relative to the calendar.
  */
-function getRelativePosition(xCoordinate: number, yCoordinate: number): number[] {
-    const { LEFT_OFFSET, TOP_OFFSET, SCROLL_OFFSET } = getCalendarInfo()
-    const relativeXCoordinate = xCoordinate - LEFT_OFFSET
+function getRelativePosition(yCoordinate: number): number {
+    const { TOP_OFFSET, SCROLL_OFFSET } = getCalendarInfo()
     const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - TOP_OFFSET
-    return [relativeXCoordinate, relativeYCoordinate]
+    return relativeYCoordinate
 }
 
 /**
@@ -74,6 +73,7 @@ function App() {
         if (modalInvoker.invoked) {
             setEventState({ ...eventState, modal: true, modalEvent: boardState.cardCollection[modalInvoker.eventID] })
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [boardState.cardCollection, modalInvoker])
 
     // Effect to Scroll to bottom of Calendar Container. Typically Starts at 9am.
@@ -100,7 +100,7 @@ function App() {
     }
 
     function expandCardDown(event: IEvent, pageYCoordinate: number, preview = true) {
-        const [_, yPosition] = getRelativePosition(0, pageYCoordinate)
+        const yPosition = getRelativePosition(pageYCoordinate)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
         const date = event.date
         const updatedEndTime = dateFns.add(date, {
@@ -114,7 +114,7 @@ function App() {
     function createPreviewEvent(date: Date, yCoordinate: number, modalIdx: number): void {
         let startTime: Date
         if (yCoordinate > 0) {
-            const [_, yPosition] = getRelativePosition(0, yCoordinate)
+            const yPosition = getRelativePosition(yCoordinate)
             const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
 
             startTime = dateFns.add(date, {
@@ -163,7 +163,7 @@ function App() {
         }
 
         const event = eventState.carrying
-        const [_, yPosition] = getRelativePosition(0, yCoord)
+        const yPosition = getRelativePosition(yCoord)
         const slotIndex = getNearestSlot(yPosition, boardState.heightIndex)
 
         let eventDate: Date

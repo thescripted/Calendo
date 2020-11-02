@@ -43,6 +43,8 @@ const StoreContext = React.createContext(undefined)
 // TODO: Validate will determine if the event location is validated. If the card
 // is in a "preview" state, then no validation checks are needed.
 function validate(event: IEvent, stagedState: IBoard): void {
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { preview, startTime, endTime, date } = event
     if (preview) {
         return
@@ -89,9 +91,10 @@ function useBoardAPI(localEventContext) {
                 let oldEventArray: IEvent[]
                 if (options.date && event.date.valueOf() !== options.date.valueOf()) {
                     oldEventArray = draftState.eventDayCollection[event.Day.dayID].eventCollection.filter(singleEvent => {
-                        if (singleEvent.eventID !== event.eventID) {
-                            return singleEvent
+                        if (singleEvent.eventID === event.eventID) {
+                            return false
                         }
+                        return singleEvent
                     })
                     draftState.eventDayCollection[options.Day.dayID].eventCollection.push({ ...cardItem, ...options })
                     // Since this condition only apply when we are "carrying a card", update that carrying object state.
@@ -161,7 +164,7 @@ function BoardProvider(props) {
             setBoardState,
             Board
         }
-    }, [boardState])
+    }, [Board, boardState])
     return <StoreContext.Provider value={value} {...props} />
 }
 
