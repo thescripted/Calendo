@@ -168,5 +168,5 @@ function BoardProvider(props) {
     return <StoreContext.Provider value={value} {...props} />
 }
 
-export { StoreContext, BoardProvider, useBoard, useBoardAPI }
+export { StoreContext, BoardProvider}
 

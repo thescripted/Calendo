@@ -54,19 +54,6 @@ export function hashDate(date: Date) {
     return (+date).toString(36);
 }
 
-// Should be moved elsewhere.
-export function useEvent() {
-    const defaultEventState: IEventState = {
-        dragging: undefined,
-        carrying: undefined,
-        modal: false,
-        isDragging: false,
-        isCarrying: false,
-        modalEvent: undefined
-    }
-    const [eventState, setEventState] = React.useState<IEventState>(defaultEventState)
-    return {eventState, setEventState}
-}
 
 export function getThreshold(height: number): number {
     return Math.max(12, height * 0.1)

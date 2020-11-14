@@ -17,6 +17,7 @@ def ws():
                               request.environ.get('HTTP_ORIGIN', ''))
     # Holds the connection, and echos.
     while True:
+        print("Coming in!")
         msg = uwsgi.websocket_recv()
         print(msg)
-        uwsgi.websocket_send("Bitch")
+        uwsgi.websocket_send("Ok")
