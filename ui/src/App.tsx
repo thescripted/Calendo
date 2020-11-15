@@ -5,11 +5,10 @@ import Row from './components/Row'
 import Card from './components/Event'
 import Modal from './components/modal/Modal'
 import Sidebar from './components/Sidebar'
-import { hashDate, useEvent, getThreshold, locateDay, getCalendarInfo } from './support'
+import { hashDate, getThreshold, locateDay, getCalendarInfo } from './support'
 import * as dateFns from 'date-fns'
 import { IEvent, IEventUpdateConfig, IModalInvoker } from './types/calendo'
-import { useWeek } from './context/TimeContext'
-import { useBoard, useBoardAPI } from './context/StoreContext'
+import { useBoard, useWeek, useEvent, useBoardAPI } from './hooks'
 
 /**
  * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.

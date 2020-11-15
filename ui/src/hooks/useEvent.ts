@@ -1,4 +1,7 @@
-export function useEvent() {
+import React from 'react'
+import { IEventState } from "../types/calendo"
+
+export default function useEvent() {
     const defaultEventState: IEventState = {
         dragging: undefined,
         carrying: undefined,
