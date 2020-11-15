@@ -1,5 +1,5 @@
 import React from 'react'
-import {useWeek} from '../context/TimeContext'
+import {useWeek} from '../hooks'
 import styles from "./styles/Navigation.module.css"
 import * as dateFns from "date-fns"
 import { ReactComponent as LeftArrow } from './static/leftArrow.svg'

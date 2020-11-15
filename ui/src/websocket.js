@@ -1,12 +1,12 @@
 // WebSocket Configuration
 const ws = new WebSocket('wss://localhost:3030/websocket')
-socket.addEventListener('open', function (event) {
-  socket.send("Hello!")
+ws.addEventListener('open', function (event) {
+  ws.send("Hello!")
 })
 
-socket.addEventListener('close', function (event) {
+ws.addEventListener('close', function (event) {
   console.log("Connection closed")
 })
 
-export default socket
+export default ws
 

@@ -59,7 +59,7 @@ const defaultModalInvoker: IModalInvoker = {
 
 function App() {
     const { boardState } = useBoard()
-    const { weekArray } = useWeek()
+    const { weekArray, jumpToToday } = useWeek()
     const { eventState, setEventState } = useEvent()
     const { generateEvent, updateEvent, deleteEvent } = useBoardAPI({ eventState, setEventState })
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
@@ -239,6 +239,18 @@ function App() {
     // Generates a preview Event based on the current Time. 
     // Operation is the exact same as "createPreviewEvent" but independent of the cursor position.
     function createEventWithCurrentTime(date: Date) {
+        // if the current week does not contain current day, then move to current day.
+        
+        function stringifyDate(date: Date): string {
+          return date.toString()
+        }
+        
+        // TODO: This is too buggy/jittery. Seems kinda like a modal issue.
+        if (!weekArray.map(stringifyDate).includes(date.toString)) {
+            jumpToToday()
+        }
+
+      
         const startTime = getNearestStartTime(date)
         const defaultEndTime = dateFns.add(startTime, {
             minutes: 60 // 1 Hour by default.

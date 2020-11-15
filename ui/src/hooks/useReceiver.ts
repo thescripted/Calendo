@@ -26,10 +26,10 @@ export default function useReceiver() {
 
   // binding websocket messages to update message state.
   React.useEffect(() => {
-    ws.addEventListener('message', setMessage)
+    ws.addEventListener('message', e => setMessage(e.data))
     ws.addEventListener('error', setError)
     return () => {
-      ws.removeEventListener('message', setMessage)
+      ws.removeEventListener('message', e => setMessage(e.data))
       ws.removeEventListener('error', setError)
     }
   }, [])
