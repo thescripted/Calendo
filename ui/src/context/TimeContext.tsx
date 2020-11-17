@@ -1,6 +1,6 @@
 import React from 'react'
 import { hashDate } from '../support'
-import { add, startOfWeek, sub } from 'date-fns'
+import { add, startOfWeek } from 'date-fns'
 import { useBoard } from '../hooks'
 
 export const TimeContext = React.createContext(undefined)

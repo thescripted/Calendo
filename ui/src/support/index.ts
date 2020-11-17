@@ -1,5 +1,4 @@
-import React from 'react'
-import { IEventState, IDay, IBoard } from '../types/calendo'
+import { IDay, IBoard } from '../types/calendo'
 
 
 /**

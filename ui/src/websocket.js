@@ -1,5 +1,5 @@
 // WebSocket Configuration
-const ws = new WebSocket('wss://localhost:3030/websocket')
+const ws = new WebSocket('ws://localhost:3030/websocket')
 ws.addEventListener('open', function (event) {
   ws.send("Hello!")
 })

@@ -15,9 +15,8 @@ def ws():
     # Complete the handshake
     uwsgi.websocket_handshake(request.environ['HTTP_SEC_WEBSOCKET_KEY'],
                               request.environ.get('HTTP_ORIGIN', ''))
+    uwsgi.websocket_send("Completed handshake!")
     # Holds the connection, and echos.
     while True:
-        print("Coming in!")
         msg = uwsgi.websocket_recv()
-        print(msg)
-        uwsgi.websocket_send("Ok")
+        uwsgi.websocket_send(msg)

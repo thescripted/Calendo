@@ -27,10 +27,10 @@ export default function useReceiver() {
   // binding websocket messages to update message state.
   React.useEffect(() => {
     ws.addEventListener('message', e => setMessage(e.data))
-    ws.addEventListener('error', setError)
+    ws.addEventListener('error', e => setError(e))
     return () => {
       ws.removeEventListener('message', e => setMessage(e.data))
-      ws.removeEventListener('error', setError)
+      ws.removeEventListener('error', e => setError(e))
     }
   }, [])
 
@@ -41,13 +41,13 @@ export default function useReceiver() {
 
     if (error) {
       setBoard(undefined)
-      throw new Error("Unexpected Input from Server...")
+      console.log("Error!")
     }
 
     const currentMessage = parseMessage(message)
     const updatedBoard = diff(currentMessage, currentBoardState)
     setBoard(updatedBoard)
-  }, [message])
+  }, [currentBoardState, error, message])
 
   return [board, error] 
 }

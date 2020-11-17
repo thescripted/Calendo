@@ -1,5 +1,5 @@
 import React from 'react'
-import {useWeek} from '../hooks'
+import {useWeek, useDispatcher} from '../hooks'
 import styles from "./styles/Navigation.module.css"
 import * as dateFns from "date-fns"
 import { ReactComponent as LeftArrow } from './static/leftArrow.svg'
@@ -7,6 +7,7 @@ import { ReactComponent as RightArrow } from './static/rightArrow.svg'
 
 export default function Navigation(props) {
     const { weekArray, incrementDays, decrementDays, jumpToToday } = useWeek()
+    const dispatch = useDispatcher()
     const startDate = weekArray[0]
     const endDate = weekArray[weekArray.length - 1]
 
@@ -17,7 +18,10 @@ export default function Navigation(props) {
                     <h2>Calendo</h2>
                 </div>
                 <div className={styles.row_nav}>
-                    <button onClick={() => jumpToToday()}>Today</button>
+                  <button onClick={() => { 
+                    jumpToToday()
+                    dispatch()
+                  }}>Today</button>
                     <div className={styles.button_container}>
                         <button id={styles.left_button} onClick={() => decrementDays()}>
                             <LeftArrow />
