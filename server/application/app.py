@@ -1,22 +1,15 @@
+import os
+import requests
 from flask import Flask, request
-import uwsgi
 
+api_port = os.environ['PORT_API']
+api_url = f'http://slow_api_test:{api_port}/'
 
 app = Flask(__name__)
 
 
-@app.route("/")
-def hello():
-    return "<h1 style='color:blue'>Hello!</h1>"
-
-
-@app.route("/websocket")
-def ws():
-    # Complete the handshake
-    uwsgi.websocket_handshake(request.environ['HTTP_SEC_WEBSOCKET_KEY'],
-                              request.environ.get('HTTP_ORIGIN', ''))
-    uwsgi.websocket_send("Completed handshake!")
-    # Holds the connection, and echos.
-    while True:
-        msg = uwsgi.websocket_recv()
-        uwsgi.websocket_send(msg)
+@app.route('/')
+def index():
+    delay = float(request.args.get('delay') or 1)
+    resp = requests.get(f'{api_url}?delay={delay}')
+    return 'Hi there! ' + resp.text
