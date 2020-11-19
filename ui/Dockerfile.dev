@@ -1,0 +1,7 @@
+FROM node:alpine
+
+WORKDIR /usr/src/app/ui
+
+COPY package.json ./
+RUN yarn install
+CMD ["yarn", "run", "start"]
