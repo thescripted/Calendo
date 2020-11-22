@@ -1,7 +1,7 @@
 version: '3.7'
 
 services:
-  development:
+  react_development:
     stdin_open: true
     build:
       context: ./ui
@@ -9,19 +9,18 @@ services:
     container_name: react-ui
     ports:
       - "3000:3000"
-    volumes:
-      - "./ui:/usr/src/app/ui"
-      - "/usr/src/app/ui/node_modules"
 
-  flask_app_uwsgi:
+  flask_development:
     init: true
     build:
       context: ./server/application
       dockerfile: Dockerfile
+    container_name: flask-core
+    environment:
+      - THREADS=50
+      - WORKERS=3
     ports:
       - "127.0.0.1:5000:5000"
-    depends_on:
-      - slow_api_test
 
   slow_api_test:
     init: true

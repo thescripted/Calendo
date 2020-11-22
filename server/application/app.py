@@ -13,3 +13,8 @@ def index():
     delay = float(request.args.get('delay') or 1)
     resp = requests.get(f'{api_url}?delay={delay}')
     return 'Hi there! ' + resp.text
+
+
+# Only for debugging purposes
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", debug=True, port=80)

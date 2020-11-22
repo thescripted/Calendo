@@ -1,7 +1,11 @@
 FROM node:alpine
-
-WORKDIR /usr/src/app/ui
-
-COPY package.json ./
+WORKDIR /app
+COPY package.json /app/package.json
+COPY yarn.lock /app/yarn.lock
 RUN yarn install
-CMD ["yarn", "run", "start"]
+COPY . .
+RUN yarn build
+
+FROM nginx:latest
+COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build /usr/share/nginx/html
