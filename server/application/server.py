@@ -21,10 +21,17 @@ def hello():
 @app.route("/websocket")
 def ws():
     # Complete the handshake
+    print("establishing websocket...")
     uwsgi.websocket_handshake(request.environ['HTTP_SEC_WEBSOCKET_KEY'],
                               request.environ.get('HTTP_ORIGIN', ''))
     uwsgi.websocket_send("Completed handshake!")
+    print("Connection opened")
     # Holds the connection, and echos.
     while True:
         msg = uwsgi.websocket_recv()
+        print(msg)
         uwsgi.websocket_send(msg)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
