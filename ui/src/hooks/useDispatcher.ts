@@ -25,7 +25,6 @@ export default function useDispatcher() {
     ws.send(JSON.stringify(currentBoardState))
     dispatchedMessageCount++
     console.log(dispatchedMessageCount)
-    
     return 1
   }
 
