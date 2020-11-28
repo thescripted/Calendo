@@ -1,12 +1,6 @@
 // WebSocket Configuration
-const ws = new WebSocket('ws://localhost:3030/websocket')
-ws.addEventListener('open', function (event) {
-  ws.send("Hello!")
-})
+import io from 'socket.io-client'
 
-ws.addEventListener('close', function (event) {
-  console.log("Connection closed")
-})
-
-export default ws
+const socket = io('http://localhost:5000')
+export default socket
 

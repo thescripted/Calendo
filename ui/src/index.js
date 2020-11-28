@@ -7,7 +7,6 @@ import Layout from './components/Layout'
 import {BoardProvider}  from './context/StoreContext.tsx'
 import {WeekProvider} from './context/TimeContext.tsx'
 
-
 ReactDOM.render(
     <React.StrictMode>
         <BoardProvider>

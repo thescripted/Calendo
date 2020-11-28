@@ -1,5 +1,5 @@
 import React from 'react'
-import ws from '../websocket'
+import socket from '../websocket'
 import useBoard from './useBoard'
 
 let dispatchedMessageCount = 0
@@ -21,8 +21,9 @@ export default function useDispatcher() {
     // Send
     // Call callback functions and return
     console.log(currentBoardState)
-    console.log(ws)
-    ws.send(JSON.stringify(currentBoardState))
+    console.log(socket)
+    // serialize currentBoardState here
+    socket.emit('testing', 'hello, world!')
     dispatchedMessageCount++
     console.log(dispatchedMessageCount)
     return 1
