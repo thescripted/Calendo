@@ -1,31 +1,51 @@
 import React from 'react'
-import useBoard from './useBoard'
+import { WebSocketContext } from '../context/WebSocketContext'
+import { StoreContext } from "../context/StoreContext"
+import {isShallowEqual} from '../support'
 
 let dispatchedMessageCount = 0
-
-/* core logic for dispatching events to the websocket
- * React can call `dispatch()` which will send data through the socket.
- * dispatch will return an Ok if the message was sent successfully, or an error otherwise.
- * Additionally, useDispatcher can auto-save the application, calling itself a fixed amount of times.
- * Since it may not be optimal to allow frequent inputs into our server, some throttling mechanism
- * will be needed here.
- */
+const INTERVAL_TIMEOUT = 5000 // 5 seconds
 
 export default function useDispatcher() {
-  const { boardState: currentBoardState } = useBoard()
-  // Perhaps in the future this might be useful if it were completely asynchromous.
+  let timeInterval
+  let _previousBoardState
+  const [readyState, setReadyState] = React.useState(true)
+
+  const boardState = React.useContext(StoreContext)
+  const ws = React.useContext(WebSocketContext)
+
+  React.useEffect(function() {
+    if (readyState) {
+      ws.emit('event://calendar', JSON.stringify(boardState))
+      setReadyState(false)
+      timeInterval = setTimeout(function() {
+        setReadyState(true)
+      }, INTERVAL_TIMEOUT)
+    }
+  }, [boardState, readyState])
+
+  if (!timeInterval) {
+  timeInterval = setInterval(function() {
+      ws.emit('event://calendar', JSON.stringify(boardState))
+    }, INTERVAL_TIMEOUT)
+  }
+
+  function interrupt() {
+    if (!timeInterval) {
+      return
+    }
+    clearInterval(timeInterval)
+    timeInterval = undefined
+  }
+
   function dispatch() {
-    // Confirm,
-    // Clean and Serialize,
-    // Send
-    // Call callback functions and return
-    // serialize currentBoardState here
     dispatchedMessageCount++
     console.log("Message, sent!")
     return 1
   }
 
-
-  return dispatch
-
+  return {
+    interrupt
+    dispatch
+  }
 }

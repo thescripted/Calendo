@@ -16,11 +16,11 @@ export default function({ children }) {
       user_id: user_id,
       data: currentState,
     }
+    console.log(payload)
   }
-
   if (!socket) {
     socket = io.connect(DEV_URL)
-    socket.on('event://get-message', function(msg) {
+    socket.on('event://calendar', function(msg) {
       const payload = JSON.parse(msg)
       console.log(payload)
     })
