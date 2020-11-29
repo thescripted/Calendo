@@ -1,21 +1,27 @@
 from flask import Flask
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, send
+import sys
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+app.config['SECRET_KEY'] = 'mysecret!'
+
+
+socketio = SocketIO(app, cors_allowed_origins='http://localhost:3000')
+print(socketio, file=sys.stderr)
 
 
 @app.route("/")
 def hello():
+    print("Howdy!", file=sys.stderr)
     return "Hello, there!"
 
 
-@socketio.on('testing')
-def handle_message(message):
-    print("received Message: " + message)
-    emit('testing', message)
+@socketio.on("message")
+def handleMessage(msg):
+    print("Message: " + msg, file=sys.stderr)
+    send("Howdy!", broadcast=True)
 
 
 if __name__ == "__main__":
-    print("running app!")
+    print("running app!", file=sys.stderr)
     socketio.run(app)

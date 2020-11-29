@@ -1,7 +1,6 @@
 import React from "react"
 import { IBoard } from "../types/calendo"
 import useBoard from './useBoard'
-import socket from "../websocket"
 
 
 export default function useReceiver() {
@@ -25,14 +24,6 @@ export default function useReceiver() {
   }
 
   // binding websocket messages to update message state.
-  React.useEffect(() => {
-    socket.on('testing', function(msg) {
-      console.log(msg)
-    });
-    return () => {
-    }
-  }, [])
-
   React.useEffect(() => {
     if (message === "") {
       return
