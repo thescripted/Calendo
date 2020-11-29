@@ -1,41 +1,30 @@
 import React from 'react'
 import { WebSocketContext } from '../context/WebSocketContext'
 import { StoreContext } from "../context/StoreContext"
-import {isShallowEqual} from '../support'
 
 let dispatchedMessageCount = 0
-const INTERVAL_TIMEOUT = 5000 // 5 seconds
 
 export default function useDispatcher() {
-  let timeInterval
-  let _previousBoardState
-  const [readyState, setReadyState] = React.useState(true)
-
-  const boardState = React.useContext(StoreContext)
-  const ws = React.useContext(WebSocketContext)
-
-  React.useEffect(function() {
-    if (readyState) {
-      ws.emit('event://calendar', JSON.stringify(boardState))
-      setReadyState(false)
-      timeInterval = setTimeout(function() {
-        setReadyState(true)
-      }, INTERVAL_TIMEOUT)
+  const { boardState } = React.useContext(StoreContext)
+  const { socket } = React.useContext(WebSocketContext)
+  React.useEffect(function () {
+    // if a card is in a preview state, don't dispatch.
+    if (!_checkForPreview(boardState.cardCollection)) {
+      socket.emit(JSON.stringify(boardState))
+      console.log("Fired off board state!")
     }
-  }, [boardState, readyState])
+  }, [boardState])
 
-  if (!timeInterval) {
-  timeInterval = setInterval(function() {
-      ws.emit('event://calendar', JSON.stringify(boardState))
-    }, INTERVAL_TIMEOUT)
-  }
-
-  function interrupt() {
-    if (!timeInterval) {
-      return
+  // Determines if any card is in a preview state.
+  function _checkForPreview(collection) {
+    for (let card in collection) {
+      if (collection.hasOwnProperty(card)) {
+        if (collection[card].preview === true) {
+          return true 
+        }
+      }
     }
-    clearInterval(timeInterval)
-    timeInterval = undefined
+    return false 
   }
 
   function dispatch() {
@@ -43,9 +32,10 @@ export default function useDispatcher() {
     console.log("Message, sent!")
     return 1
   }
-
-  return {
-    interrupt
-    dispatch
+  // Allow user to disable dispatching events.
+  function disableWebSocket() {
+    socket.close()
   }
+
+  return disableWebSocket
 }
