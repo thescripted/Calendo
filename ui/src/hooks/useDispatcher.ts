@@ -8,11 +8,19 @@ export default function useDispatcher() {
   const { boardState } = React.useContext(StoreContext)
   const value = React.useContext(WebSocketContext)
   const { socket } = value
+  const [dispatchFlag, setDispatchFlag] = React.useState(false)
+
+  React.useEffect(function() { 
+    if (dispatchFlag) {
+      socket.emit("event://calendar", JSON.stringify(boardState))
+      console.log("Message, sent!")
+      setDispatchFlag(false)
+    }
+  }, [boardState, dispatchFlag])
 
   function dispatch() {
+    setDispatchFlag(true)
     dispatchedMessageCount++
-    console.log("Message, sent!")
-    socket.emit("event://calendar", JSON.stringify(boardState))
     return 1
   }
   // Allow user to disable dispatching events.

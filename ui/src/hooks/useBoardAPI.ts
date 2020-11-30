@@ -4,6 +4,7 @@ import produce from 'immer'
 import { v4 as uuidv4 } from 'uuid'
 import { IBoard, IEvent, IEventUpdateConfig } from '../../src/types/calendo'
 import { isShallowEqual } from '../support/index'
+import useDispatcher from './useDispatcher' // not sure how I feel coupling this hook with this file.
 
 function validate(...args) {
   return
@@ -14,6 +15,7 @@ export default function useBoardAPI(localEventContext) {
     const { boardState, setBoardState } = context
     const { eventState, setEventState } = localEventContext
     const [ opts, setOpts ] = React.useState({})
+    const dispatch = useDispatcher()
 
     function generateEvent(options: IEventUpdateConfig): string {
         const eventID = uuidv4()
@@ -73,6 +75,9 @@ export default function useBoardAPI(localEventContext) {
             })
             validate(event, nextState)
             setBoardState(nextState)
+            if (options.preview === false) {
+              dispatch() // sends to server updated board state. Not sure if I want network traffic in this file.
+            }
         }
     }
 
@@ -92,6 +97,7 @@ export default function useBoardAPI(localEventContext) {
         })
         validate(event, nextState)
         setBoardState(nextState)
+        dispatch() // sends to server updated board state. Not sure if I want network traffic in this file.
     }
 
     return { generateEvent, updateEvent, deleteEvent }
