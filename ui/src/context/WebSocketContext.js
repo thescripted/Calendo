@@ -14,6 +14,10 @@ function dateTimeReviver(key, value) {
   return value
 }
 
+
+let socket
+let value
+
 function WebSocketProvider(props) {
   const { setBoardState } = React.useContext(StoreContext)
   function sendState(currentState, user_id, board_url) {
@@ -25,27 +29,30 @@ function WebSocketProvider(props) {
     console.log(payload)
   }
 
-  const socket = io.connect(DEV_URL)
-  socket.on('connect', function() {
-    socket.emit("event://init", "User has connected")
-  });
+  if (!socket) {
+    socket = io.connect(DEV_URL)
+    socket.on('connect', function() {
+      socket.emit("event://init", "User has connected")
+    });
 
-  socket.on('event://init', function(msg) {
-    const payload = JSON.parse(msg, dateTimeReviver)
-    console.log(payload)
-    setBoardState(payload)
-  })
+    socket.on('event://init', function(msg) {
+      const payload = JSON.parse(msg, dateTimeReviver)
+      console.log(payload)
+      setBoardState(payload)
+    })
 
-  socket.on('event://calendar', function(msg) {
-    const payload = JSON.parse(msg, dateTimeReviver)
-    console.log(payload)
-    setBoardState(payload)
-  })
-
-  const value = {
-    socket,
-    sendState
+    socket.on('event://calendar', function(msg) {
+      const payload = JSON.parse(msg, dateTimeReviver)
+      console.log(payload)
+      setBoardState(payload)
+    })
+    value = {
+      socket,
+      sendState
+    }
   }
+
+
   return <WebSocketContext.Provider value={value} {...props} />
 }
 export { WebSocketContext, WebSocketProvider}

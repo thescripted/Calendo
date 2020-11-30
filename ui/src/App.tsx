@@ -8,7 +8,7 @@ import Sidebar from './components/Sidebar'
 import { hashDate, getThreshold, locateDay, getCalendarInfo } from './support'
 import * as dateFns from 'date-fns'
 import { IEvent, IEventUpdateConfig, IModalInvoker } from './types/calendo'
-import { useBoard, useWeek, useEvent, useBoardAPI } from './hooks'
+import { useBoard, useWeek, useEvent, useBoardAPI, useDispatcher } from './hooks'
 
 /**
  * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
@@ -89,6 +89,7 @@ function App() {
     }
 
     function finalizeCardMovement(cardEvent: IEvent) {
+      console.log("finalized!")
         updateEvent(cardEvent, { preview: false })
         setEventState({ ...eventState, dragging: undefined, isDragging: false })
     }

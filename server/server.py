@@ -19,12 +19,14 @@ def handle_message(msg):
 def handle_calendar(msg):
     r.set('default', msg)
     emit('event://calendar', r.get('default').decode(), broadcast=True)
+    print("fired off an event!")
 
 
 @socketio.on("event://init")
 def handle_init(msg):
     current_state = r.get('default')
     emit('event://init', current_state.decode())
+    print("fired off an event!")
 
 
 if __name__ == "__main__":

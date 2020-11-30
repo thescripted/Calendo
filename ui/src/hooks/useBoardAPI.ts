@@ -11,7 +11,6 @@ function validate(...args) {
 
 export default function useBoardAPI(localEventContext) {
     const context = React.useContext(StoreContext)
-
     const { boardState, setBoardState } = context
     const { eventState, setEventState } = localEventContext
     const [ opts, setOpts ] = React.useState({})

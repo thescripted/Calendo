@@ -7,7 +7,6 @@ import { ReactComponent as RightArrow } from './static/rightArrow.svg'
 
 export default function Navigation(props) {
     const { weekArray, incrementDays, decrementDays, jumpToToday } = useWeek()
-    const disableWebSocket = useDispatcher()
     const startDate = weekArray[0]
     const endDate = weekArray[weekArray.length - 1]
 
