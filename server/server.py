@@ -25,8 +25,9 @@ def handle_calendar(msg):
 @socketio.on("event://init")
 def handle_init(msg):
     current_state = r.get('default')
-    emit('event://init', current_state.decode())
-    print("fired off an event!")
+    if current_state is not None:
+        emit('event://init', current_state.decode())
+        print("fired off an event!")
 
 
 if __name__ == "__main__":
