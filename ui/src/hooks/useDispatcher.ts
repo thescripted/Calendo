@@ -12,8 +12,7 @@ export default function useDispatcher() {
 
   React.useEffect(function() { 
     if (dispatchFlag) {
-      socket.emit("event://calendar", JSON.stringify(boardState))
-      console.log("Message, sent!")
+      socket.emit("calendar", JSON.stringify(boardState))
       setDispatchFlag(false)
     }
   }, [boardState, dispatchFlag])

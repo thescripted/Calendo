@@ -1,43 +1,38 @@
 import React from "react"
 import { IBoard } from "../types/calendo"
 import useBoard from './useBoard'
+import { WebSocketContext } from '../context/WebSocketContext'
 
+// Not ideal to have this defined here. Should move to utils.
+function dateTimeReviver(key, value) {
+  if (key === "date" || key === "startTime" || key === "endTime") {
+    return new Date(value)
+  }
+  return value
+}
 
 export default function useReceiver() {
-  const [message, setMessage] = React.useState<string>("")
-  const [board, setBoard] = React.useState<IBoard | undefined>(undefined)
-  const [error, setError] = React.useState(undefined)
-  const { boardState: currentBoardState } = useBoard()
+    const [received, setReceived] = React.useState<IBoard | undefined>(undefined)
+    const {socket} = React.useContext(WebSocketContext)
+    React.useEffect(() => {
+        console.log(socket)
+        socket.on('init', function(msg: string) {
+            const payload = JSON.parse(msg, dateTimeReviver)
+            console.log(payload)
+            setReceived(payload)
+        })
 
-  // deserializes and reads data from incoming socket. Calls the appropriates methods to handle the read data.
-  // Only to read JSON-structured data. In the future it may be useful to handle different types of incoming data,
-  // In which this will need more access to the header or initial websocket connection.
-  function parseMessage(data: string): IBoard {
-    const parsedData = JSON.parse(data)
-    console.log('Message from server: ', parsedData)
-    return parsedData 
-  }
+        socket.on('calendar', function(msg: string) {
+            const payload = JSON.parse(msg, dateTimeReviver)
+            console.log(payload)
+            setReceived(payload)
+        })
+    }, [])
+  
 
-  // Diffing algorithm used to determine and resolve merge conflicts between board states.
-  function diff(current: IBoard, previous: IBoard): IBoard {
-    return current
-  }
-
-  // binding websocket messages to update message state.
-  React.useEffect(() => {
-    if (message === "") {
-      return
+    // Diffing algorithm used to determine and resolve merge conflicts between board states.
+    function diff(current: IBoard, previous: IBoard): IBoard {
+        return current
     }
-
-    if (error) {
-      setBoard(undefined)
-      console.log("Error!")
-    }
-
-    const currentMessage = parseMessage(message)
-    const updatedBoard = diff(currentMessage, currentBoardState)
-    setBoard(updatedBoard)
-  }, [currentBoardState, error, message])
-
-  return [board, error] 
+  return [received] 
 }

@@ -5,16 +5,6 @@ const DEV_URL = 'http://localhost:5000'
 
 const WebSocketContext = React.createContext(undefined)
 
-
-// Not ideal to have this defined here. Should move to utils.
-function dateTimeReviver(key, value) {
-  if (key === "date" || key === "startTime" || key === "endTime") {
-    return new Date(value)
-  }
-  return value
-}
-
-
 let socket
 let value
 
@@ -32,20 +22,8 @@ function WebSocketProvider(props) {
   if (!socket) {
     socket = io.connect(DEV_URL)
     socket.on('connect', function() {
-      socket.emit("event://init", "User has connected")
+      socket.emit("init", "User has connected")
     });
-
-    socket.on('event://init', function(msg) {
-      const payload = JSON.parse(msg, dateTimeReviver)
-      console.log(payload)
-      setBoardState(payload)
-    })
-
-    socket.on('event://calendar', function(msg) {
-      const payload = JSON.parse(msg, dateTimeReviver)
-      console.log(payload)
-      setBoardState(payload)
-    })
     value = {
       socket,
       sendState

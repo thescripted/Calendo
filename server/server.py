@@ -20,21 +20,21 @@ def handle_message(msg):
     send("Howdy!", broadcast=True)
 
 
-@socketio.on("event://calendar")
+@socketio.on("calendar")
 def handle_calendar(msg):
     json_msg = jsparser.decode(msg)
     rj.jsonset('blank', Path.rootPath(), json_msg)
     serialized_msg = json_serializer.encode(rj.jsonget('blank'))
-    emit('event://calendar', serialized_msg, broadcast=True)
+    emit('calendar', serialized_msg, broadcast=True)
     print("fired off an event!")
 
 
-@socketio.on("event://init")
+@socketio.on("init")
 def handle_init(msg):
     json_state = rj.jsonget('blank')
     print(json_state, file=sys.stderr)
     if json_state is not None:
-        emit('event://init', json_serializer.encode(json_state))
+        emit('init', json_serializer.encode(json_state))
         print("fired off an event!")
 
 

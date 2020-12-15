@@ -8,7 +8,7 @@ import Sidebar from './components/Sidebar'
 import { hashDate, getThreshold, locateDay, getCalendarInfo } from './support'
 import * as dateFns from 'date-fns'
 import { IEvent, IEventUpdateConfig, IModalInvoker } from './types/calendo'
-import { useBoard, useWeek, useEvent, useBoardAPI, useDispatcher } from './hooks'
+import { useBoard, useWeek, useEvent, useBoardAPI, useDispatcher, useReceiver } from './hooks'
 
 /**
  * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
@@ -58,11 +58,12 @@ const defaultModalInvoker: IModalInvoker = {
 }
 
 function App() {
-    const { boardState } = useBoard()
+    const { setBoardState, boardState } = useBoard()
     const { weekArray, jumpToToday } = useWeek()
     const { eventState, setEventState } = useEvent()
     const { generateEvent, updateEvent, deleteEvent } = useBoardAPI({ eventState, setEventState })
     const [modalInvoker, setModalInvoker] = React.useState<IModalInvoker>(defaultModalInvoker)
+    const [received] = useReceiver()
 
     // useEffect for toggling the modal. 
     // This relies on the cardollection being appropriately updated, but since this card
@@ -81,6 +82,14 @@ function App() {
         const rootElem = document.getElementById('calendar_root')
         rootElem.scrollTop = rootElem.scrollHeight
     }, [])
+
+    // Effect to update boardState on new incoming message.
+    React.useEffect(() => {
+        console.log(received)
+        if(received) {
+            setBoardState(received)
+        }
+    }, [received])
 
     // Wrapper for setEventState. This is passed to the modal view to only update the modalState.
     function setModal(value: boolean) {
