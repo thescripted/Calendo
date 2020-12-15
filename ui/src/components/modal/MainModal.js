@@ -1,15 +1,19 @@
-import React from 'react'
-import * as dateFns from 'date-fns';
-import produce from 'immer';
-import styles from './styles/MainModal.module.css';
+import React from "react";
+import * as dateFns from "date-fns";
+import produce from "immer";
+import styles from "./styles/MainModal.module.css";
 
 // styleObject will contain the css-style needed to render the modal in the right location.
 // This will be updated in an effect, based on the location of the event.
-let styleObject = {}
+let styleObject = {};
 
-
-
-export default function MainModal ({ updater, deleter, event, setModal, ...props }) {
+export default function MainModal({
+    updater,
+    deleter,
+    event,
+    setModal,
+    ...props
+}) {
     const defaultOptions = {
         startTime: event.startTime,
         endTime: event.endTime,
@@ -17,14 +21,14 @@ export default function MainModal ({ updater, deleter, event, setModal, ...props
         date: event.date,
         Day: event.Day,
         preview: true,
-    }
-    const [eventOptions, setEventOptions] = React.useState(defaultOptions)
+    };
+    const [eventOptions, setEventOptions] = React.useState(defaultOptions);
 
     // Effect to update Event Data.
     React.useEffect(() => {
-        updater(event, eventOptions)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [eventOptions])
+        updater(event, eventOptions);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [eventOptions]);
 
     // Effect to update the style Object.
     React.useEffect(() => {
@@ -36,131 +40,163 @@ export default function MainModal ({ updater, deleter, event, setModal, ...props
          *
          * This functions considers the boundary of the viewport, and (will eventually) consider
          * updating the scroll to ensure that the modal and event is always in view.
-         * 
+         *
          * @param element - The DOM element to position the modal next to.
          * @return object - The CSS styling for the modal.
          */
         function getModalPosition(element) {
-            const modalDimension = { // Determined elsewhere. This is a placeholder.
+            const modalDimension = {
+                // Determined elsewhere. This is a placeholder.
                 width: 400,
-                height: 226
-            }
+                height: 226,
+            };
             const viewportDimension = {
                 width: window.innerWidth,
-                height: window.innerHeight
-            }
-            const elementDimensions = element.getBoundingClientRect()
-            const { top, left, width } = elementDimensions
-            const padding = 4
+                height: window.innerHeight,
+            };
+            const elementDimensions = element.getBoundingClientRect();
+            const { top, left, width } = elementDimensions;
+            const padding = 4;
             const CSSObject = {
                 top: top + window.scrollY,
                 left: left + width + window.scrollX + padding,
                 opacity: 1,
-                pivot: false // Used for determining animation direction
-            }
+                pivot: false, // Used for determining animation direction
+            };
 
             if (left > viewportDimension.width / 2) {
-                CSSObject.left = left - modalDimension.width - padding
-                CSSObject.pivot = true
+                CSSObject.left = left - modalDimension.width - padding;
+                CSSObject.pivot = true;
             }
 
-            let heightBuffer = 4
+            let heightBuffer = 4;
             if (CSSObject.top < heightBuffer) {
-                CSSObject.top = heightBuffer 
-            } else if (CSSObject.top >= viewportDimension.height - modalDimension.height - heightBuffer + window.scrollY) {
-                CSSObject.top = viewportDimension.height - modalDimension.height - heightBuffer + window.scrollY
+                CSSObject.top = heightBuffer;
+            } else if (
+                CSSObject.top >=
+                viewportDimension.height -
+                    modalDimension.height -
+                    heightBuffer +
+                    window.scrollY
+            ) {
+                CSSObject.top =
+                    viewportDimension.height -
+                    modalDimension.height -
+                    heightBuffer +
+                    window.scrollY;
             }
 
-            let widthBuffer = 8
+            let widthBuffer = 8;
             if (CSSObject.left < widthBuffer) {
-                CSSObject.left = widthBuffer
-            } else if (CSSObject.left >= viewportDimension.width - modalDimension.width - widthBuffer + window.scrollX) {
-                CSSObject.left = viewportDimension.width - modalDimension.width - widthBuffer + window.scrollX
+                CSSObject.left = widthBuffer;
+            } else if (
+                CSSObject.left >=
+                viewportDimension.width -
+                    modalDimension.width -
+                    widthBuffer +
+                    window.scrollX
+            ) {
+                CSSObject.left =
+                    viewportDimension.width -
+                    modalDimension.width -
+                    widthBuffer +
+                    window.scrollX;
             }
 
-            return CSSObject
+            return CSSObject;
         }
 
-        const eventViewObject = document.querySelector(`[data-eventid="${event.eventID}"]`)
-        const viewData = getModalPosition(eventViewObject)
-        delete viewData.pivot
-        styleObject = {...styleObject, ...viewData}
+        const eventViewObject = document.querySelector(
+            `[data-eventid="${event.eventID}"]`
+        );
+        const viewData = getModalPosition(eventViewObject);
+        delete viewData.pivot;
+        styleObject = { ...styleObject, ...viewData };
         return () => {
-            styleObject = {}
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+            styleObject = {};
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     function updateEventOptions(e) {
         const newState = produce(eventOptions, draftState => {
-            draftState.content = e.target.value
+            draftState.content = e.target.value;
         });
-        setEventOptions(newState)
+        setEventOptions(newState);
     }
 
     function publishEvent(withDelete) {
         if (event.content === "" || withDelete) {
-            deleter(event)
+            deleter(event);
         } else {
-        updater(event, {...eventOptions, preview: false})
+            updater(event, { ...eventOptions, preview: false });
         }
     }
 
     function clearState() {
-        setModal(false)
-        setEventOptions(undefined)
+        setModal(false);
+        setEventOptions(undefined);
     }
 
-    const formattedStartTime = dateFns.format(event.startTime, 'hh:mm a');
-    const formattedEndTime = dateFns.format(event.endTime, 'hh:mm a');
-    const formattedDate = dateFns.format(event.date, 'EEEE, MMMM do');
+    const formattedStartTime = dateFns.format(event.startTime, "hh:mm a");
+    const formattedEndTime = dateFns.format(event.endTime, "hh:mm a");
+    const formattedDate = dateFns.format(event.date, "EEEE, MMMM do");
     return (
-            <div className={styles.modal_container} style={styleObject}>
-                <div className={styles.modal_header}>
-                    <button className={styles.x_icon} onClick={() => {
-                        publishEvent()
-                        clearState()
+        <div className={styles.modal_container} style={styleObject}>
+            <div className={styles.modal_header}>
+                <button
+                    className={styles.x_icon}
+                    onClick={() => {
+                        publishEvent();
+                        clearState();
+                    }}
+                />
+            </div>
+            <div className={styles.modal_main}>
+                <textarea
+                    autoFocus={true}
+                    className={`${styles.hover} ${styles.hover_3}`}
+                    placeholder="Add Title"
+                    value={eventOptions.content}
+                    onChange={updateEventOptions}
+                    onKeyPress={e => {
+                        if (e.key === "Enter") {
+                            publishEvent();
+                            clearState();
+                            return;
                         }
-                    } />
-                </div>
-                <div className={styles.modal_main}>
-                    <textarea
-                        autoFocus={true}
-                        className={`${styles.hover} ${styles.hover_3}`}
-                        placeholder='Add Title'
-                        value={eventOptions.content}
-                        onChange={updateEventOptions}
-                        onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                                publishEvent()
-                                clearState()
-                                return
-                            }
-                        }}
-                        rows='1'
-                        wrap='soft'
-                    ></textarea>
-                    <div className={styles.modal_date_wrapper}>
-                        <div className={styles.modal_dates_area}>
-                            <button className={styles.date_area}>{formattedDate}</button>
-                            <div className={styles.time_area}>
-                                <button>{formattedStartTime}</button>–<button>{formattedEndTime}</button>
-                            </div>
+                    }}
+                    rows="1"
+                    wrap="soft"></textarea>
+                <div className={styles.modal_date_wrapper}>
+                    <div className={styles.modal_dates_area}>
+                        <button className={styles.date_area}>
+                            {formattedDate}
+                        </button>
+                        <div className={styles.time_area}>
+                            <button>{formattedStartTime}</button>–
+                            <button>{formattedEndTime}</button>
                         </div>
                     </div>
                 </div>
-                <div className={styles.modal_footer}>
-                    <button className={styles.delete} onClick={() => {
-                        publishEvent(true)
-                        clearState()
-                        } 
-                    }>Delete</button>
-                    <button onClick={() => {
-                        publishEvent()
-                        clearState()
-                        } 
-                    }>Save</button>
-                </div>
             </div>
+            <div className={styles.modal_footer}>
+                <button
+                    className={styles.delete}
+                    onClick={() => {
+                        publishEvent(true);
+                        clearState();
+                    }}>
+                    Delete
+                </button>
+                <button
+                    onClick={() => {
+                        publishEvent();
+                        clearState();
+                    }}>
+                    Save
+                </button>
+            </div>
+        </div>
     );
 }
