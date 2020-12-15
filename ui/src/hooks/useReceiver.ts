@@ -1,38 +1,38 @@
 import React from "react"
 import { IBoard } from "../types/calendo"
-import useBoard from './useBoard'
 import { WebSocketContext } from '../context/WebSocketContext'
 
+/**
+ * useReceiver receives incoming messages from a WebSocket and deserializes it.
+ * @returns {receivedBoardState} the deserialized boardState.
+ *
+ * The entire board gets sent across the socket, but I believe this might be expensive.
+ *
+ */
+export default function useReceiver() {
+    const [receivedBoardState, setReceived] = React.useState<IBoard | undefined>(undefined)
+    const {socket} = React.useContext(WebSocketContext)
+
+    // Initializes the socket event handlers to listen to the required events.
+    React.useEffect(() => {
+        socket.on('init', function(msg: string) {
+            const payload = JSON.parse(msg, dateTimeReviver)
+            setReceived(payload)
+        })
+
+        socket.on('calendar', function(msg: string) {
+            const payload = JSON.parse(msg, dateTimeReviver)
+            setReceived(payload)
+        })
+    }, [])
+  return receivedBoardState
+}
+
 // Not ideal to have this defined here. Should move to utils.
-function dateTimeReviver(key, value) {
+function dateTimeReviver(key: string, value: string) {
   if (key === "date" || key === "startTime" || key === "endTime") {
     return new Date(value)
   }
   return value
 }
 
-export default function useReceiver() {
-    const [received, setReceived] = React.useState<IBoard | undefined>(undefined)
-    const {socket} = React.useContext(WebSocketContext)
-    React.useEffect(() => {
-        console.log(socket)
-        socket.on('init', function(msg: string) {
-            const payload = JSON.parse(msg, dateTimeReviver)
-            console.log(payload)
-            setReceived(payload)
-        })
-
-        socket.on('calendar', function(msg: string) {
-            const payload = JSON.parse(msg, dateTimeReviver)
-            console.log(payload)
-            setReceived(payload)
-        })
-    }, [])
-  
-
-    // Diffing algorithm used to determine and resolve merge conflicts between board states.
-    function diff(current: IBoard, previous: IBoard): IBoard {
-        return current
-    }
-  return [received] 
-}

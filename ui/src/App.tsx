@@ -10,53 +10,7 @@ import * as dateFns from 'date-fns'
 import { IEvent, IEventUpdateConfig, IModalInvoker } from './types/calendo'
 import { useBoard, useWeek, useEvent, useBoardAPI, useDispatcher, useReceiver } from './hooks'
 
-/**
- * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
- * @param {number} - The absolute y-coordinate, relative to the page.
- * @returns {number} - Returns the coordinate relative to the calendar.
- */
-function getRelativePosition(yCoordinate: number): number {
-    const { TOP_OFFSET, SCROLL_OFFSET } = getCalendarInfo()
-    const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - TOP_OFFSET
-    return relativeYCoordinate
-}
-
-/**
- * Given an array of coordinates, and a cursor position, this will return the index
- * of the nearest slot.
- * Example:
- * rawCoordinate = 130
- * slots = [0, 50, 100, 150, 200, 250]
- *
- * Returns:
- * 150
- *
- * @param {number} rawCoordinate
- * @param {number[]} slots
- * @return {number}
- */
-function getNearestSlot(rawCoordinate: number, slots: number[]): number {
-    let minVal = Number.MAX_SAFE_INTEGER;
-    let coord = -1;
-    slots.forEach(function (rowCoord, idx) { // a binary search would work better. Whatever.
-        const value: number = Math.abs(rowCoord - rawCoordinate);
-        if (minVal > value) {
-            coord = idx;
-            minVal = value;
-        }
-    });
-    return coord
-}
-
-// Hack to get blank image for dragEvents
-const invisibleImage = document.createElement('img');
-invisibleImage.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-
-const defaultModalInvoker: IModalInvoker = {
-    invoked: false,
-    eventID: "",
-}
-
+// TODO: In Refactoring, determine "Goal" of App: Register Event Handlers and Visualize up-to-date Data.
 function App() {
     const { setBoardState, boardState } = useBoard()
     const { weekArray, jumpToToday } = useWeek()
@@ -85,7 +39,6 @@ function App() {
 
     // Effect to update boardState on new incoming message.
     React.useEffect(() => {
-        console.log(received)
         if(received) {
             setBoardState(received)
         }
@@ -390,6 +343,54 @@ function SVGHour() {
         </div>
     )
 
+}
+
+
+/**
+ * Returns the position of the cursor, relative to the calendar (0, 0) coordinate.
+ * @param {number} - The absolute y-coordinate, relative to the page.
+ * @returns {number} - Returns the coordinate relative to the calendar.
+ */
+function getRelativePosition(yCoordinate: number): number {
+    const { TOP_OFFSET, SCROLL_OFFSET } = getCalendarInfo()
+    const relativeYCoordinate = yCoordinate + SCROLL_OFFSET - TOP_OFFSET
+    return relativeYCoordinate
+}
+
+/**
+ * Given an array of coordinates, and a cursor position, this will return the index
+ * of the nearest slot.
+ * Example:
+ * rawCoordinate = 130
+ * slots = [0, 50, 100, 150, 200, 250]
+ *
+ * Returns:
+ * 150
+ *
+ * @param {number} rawCoordinate
+ * @param {number[]} slots
+ * @return {number}
+ */
+function getNearestSlot(rawCoordinate: number, slots: number[]): number {
+    let minVal = Number.MAX_SAFE_INTEGER;
+    let coord = -1;
+    slots.forEach(function (rowCoord, idx) { // a binary search would work better. Whatever.
+        const value: number = Math.abs(rowCoord - rawCoordinate);
+        if (minVal > value) {
+            coord = idx;
+            minVal = value;
+        }
+    });
+    return coord
+}
+
+// Hack to get blank image for dragEvents
+const invisibleImage = document.createElement('img');
+invisibleImage.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
+const defaultModalInvoker: IModalInvoker = {
+    invoked: false,
+    eventID: "",
 }
 
 export default App;
