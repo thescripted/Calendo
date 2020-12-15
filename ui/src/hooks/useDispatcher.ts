@@ -1,6 +1,6 @@
-import React from 'react'
-import { WebSocketContext } from '../context/WebSocketContext'
-import { StoreContext } from "../context/StoreContext"
+import React from "react";
+import { WebSocketContext } from "../context/WebSocketContext";
+import { StoreContext } from "../context/StoreContext";
 
 /**
  * useDispatcher contains the logic to dispatch the current state of the board.
@@ -11,20 +11,23 @@ import { StoreContext } from "../context/StoreContext"
  * @returns {dispatch} A function to emit the boardState across the websocket.
  */
 export default function useDispatcher() {
-    const { boardState } = React.useContext(StoreContext)
-    const { socket } = React.useContext(WebSocketContext)
-    const [dispatchFlag, setDispatchFlag] = React.useState(false)
+    const { boardState } = React.useContext(StoreContext);
+    const socket = React.useContext(WebSocketContext);
+    const [dispatchFlag, setDispatchFlag] = React.useState(false);
 
     // boardState will constantly change. Only dispatch on a true dispatch flag.
-    React.useEffect(function() { 
-        if (dispatchFlag) {
-            socket.emit("calendar", JSON.stringify(boardState))
-            setDispatchFlag(false)
-        }
-    }, [boardState, dispatchFlag])
+    React.useEffect(
+        function () {
+            if (dispatchFlag) {
+                socket.emit("calendar", JSON.stringify(boardState));
+                setDispatchFlag(false);
+            }
+        },
+        [boardState, dispatchFlag, socket]
+    );
 
     function dispatch() {
-        setDispatchFlag(true)
+        setDispatchFlag(true);
     }
-    return dispatch
+    return dispatch;
 }
