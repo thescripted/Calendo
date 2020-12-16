@@ -30,7 +30,7 @@ export default function useReceiver() {
     return receivedBoardState;
 }
 
-// Not ideal to have this defined here. Should move to utils.
+// Maybe move elsewhere?
 function dateTimeReviver(key: string, value: string) {
     if (key === "date" || key === "startTime" || key === "endTime") {
         return new Date(value);

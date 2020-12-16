@@ -9,7 +9,6 @@ const URLContext = React.createContext(undefined);
 
 function URLProvider(props) {
     let url = document.location;
-    console.log(url);
     return <URLContext.Provider value={url} {...props} />;
 }
 export { URLContext, URLProvider };

@@ -60,7 +60,6 @@ function App() {
     }
 
     function finalizeCardMovement(cardEvent: IEvent) {
-        console.log("finalized!");
         updateEvent(cardEvent, { preview: false });
         setEventState({
             ...eventState,
