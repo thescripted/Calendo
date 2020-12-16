@@ -1,0 +1,26 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 500px;
+    height: 100vh;
+    margin: auto;
+}
+
+.wrapper {
+    min-height: 300px;
+    width: 100%;
+}
+
+.form {
+    background-color: lightblue;
+    height: 150px;
+    border-radius: 8px;
+    min-height: 400px;
+}
+
+.username {
+    display: flex;
+    flex-direction: column;
+}
