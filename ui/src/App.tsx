@@ -11,11 +11,14 @@ import { IEvent, IEventUpdateConfig, IModalInvoker } from "./types/calendo";
 import { useBoard, useWeek, useEvent, useBoardAPI, useReceiver } from "./hooks";
 
 // TODO: In Refactoring, determine "Goal" of App: Register Event Handlers and Visualize up-to-date Data.
+
+const user = "Benjamin Kinga";
 function App() {
     const { setBoardState, boardState } = useBoard();
     const { weekArray, jumpToToday } = useWeek();
     const { eventState, setEventState } = useEvent();
     const { generateEvent, updateEvent, deleteEvent } = useBoardAPI({
+        user,
         eventState,
         setEventState,
     });
@@ -36,6 +39,7 @@ function App() {
                 modalEvent: boardState.cardCollection[modalInvoker.eventID],
             });
         }
+        console.log(boardState);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [boardState.cardCollection, modalInvoker]);
 

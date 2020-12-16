@@ -10,6 +10,7 @@ export interface IEvent {
     endTime: Date;
     content: string;
     preview: boolean;
+    author: string;
 }
 
 export interface IEventUpdateConfig {
