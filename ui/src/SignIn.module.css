@@ -13,14 +13,56 @@
     width: 100%;
 }
 
+.header {
+    padding: 32px 0;
+}
+
 .form {
     background-color: lightblue;
     height: 150px;
     border-radius: 8px;
     min-height: 400px;
+    font-size: 14px; /* look into antialiased for font color/sharpness */
+    font-weight: 600;
+}
+
+.formcontent {
+    width: 80%;
+    margin: auto;
+}
+
+.form button {
+    border: none;
+    background: blue;
+    color: white;
+    width: 100%;
+    padding: 16px 0;
+}
+
+.form button:hover {
+    background: #0000aa;
 }
 
 .username {
     display: flex;
     flex-direction: column;
+    margin: 0 0 24px 0; /* look into this more. Especially around collapsing margins with Flexbox. */
+}
+
+.username label {
+    margin: 0 0 8px 0; /* look into this more. Especially around collapsing margins with Flexbox. */
+}
+
+.username input {
+    border: 1px solid lightgray;
+    width: 100%;
+    padding: 12px 8px;
+}
+
+.username input:focus {
+    border: 1px solid lightblue;
+}
+
+#name::placeholder {
+    color: lightgray;
 }
